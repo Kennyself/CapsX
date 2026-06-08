@@ -31,6 +31,11 @@
 ┌──────────────────────────────────────────────────┐
 │                    CapsX.exe                      │
 │                                                   │
+│  ┌──────────────┐                                │
+│  │ SingleInstance│                                │
+│  │ (命名互斥体) │                                │
+│  └──────────────┘                                │
+│                                                   │
 │  ┌─────────────┐   ┌──────────────┐              │
 │  │ KeyboardHook │──▶│ StateMachine │              │
 │  │ (WH_KEYBOARD │   │ (CapsLock    │              │
@@ -688,6 +693,7 @@ CapsX/
 │   │   ├── state_machine.h/cpp     # CapsLock 三态状态机
 │   │   ├── input_simulator.h/cpp   # SendInput 封装
 │   │   ├── binding_manager.h/cpp   # 按键绑定查找（Phase 1 硬编码，Phase 2 JSON）
+│   │   ├── single_instance.h/cpp   # 单实例控制（命名互斥体）
 │   │   └── config_manager.h/cpp    # JSON 配置读写
 │   ├── ui/
 │   │   ├── tray_icon.h/cpp         # Shell_NotifyIcon + 隐藏窗口
@@ -719,6 +725,7 @@ CapsX/
 
 ```
 main.cpp
+  ├──→ single_instance         # 单实例检测（命名互斥体）
   ├──→ keyboard_hook
   │      └→ state_machine
   │      │   └→ binding_manager
@@ -784,6 +791,7 @@ add_executable(CapsX WIN32
     src/core/state_machine.cpp
     src/core/input_simulator.cpp
     src/core/binding_manager.cpp
+    src/core/single_instance.cpp
     src/ui/tray_icon.cpp
     src/ui/tray_icon_drawer.cpp
     src/utils/logger.cpp
@@ -810,14 +818,67 @@ enable_testing()
 add_subdirectory(tests)
 ```
 
-### 6.2 编译器与平台
+### 6.2 编译环境
 
-| 项目 | 要求 |
-|------|------|
-| 编译器 | MSVC 19.30+（VS 2022 17.0+） |
-| C++ 标准 | C++17（`std::optional`、`std::filesystem`、结构化绑定） |
-| 目标平台 | Windows 10 22H2+ / Windows 11 x64 |
-| 编译配置 | Release: `/O2 /GL /DNDEBUG`; Debug: `/Od /Zi` |
+#### 6.2.1 当前开发环境
+
+| 项目 | 版本/路径 |
+|------|----------|
+| 操作系统 | Windows 11 Pro x64 |
+| 编译器 | MinGW GCC 16.1.0 (`x86_64-w64-mingw32`) |
+| 编译器路径 | `C:\Users\Kenny\tools\mingw64\bin\` |
+| CMake | 3.28.3 |
+| CMake 路径 | `C:\Users\Kenny\tools\cmake-3.28.3-windows-x86_64\bin\` |
+| Make 工具 | mingw32-make（随 MinGW 一起安装） |
+| C++ 标准 | C++17 |
+| 链接选项 | `-municode -static -static-libgcc -static-libstdc++`（MinGW 专用） |
+
+#### 6.2.2 编译命令
+
+编译工具不在系统 PATH 中，需使用完整路径或在 PowerShell 中临时添加 PATH：
+
+**方式一：直接使用完整路径（在项目根目录运行）**
+
+```powershell
+cd F:\09_Projects\CapsX
+
+# 配置（首次或新增源文件后需重新执行）
+& "C:\Users\Kenny\tools\cmake-3.28.3-windows-x86_64\bin\cmake.exe" -S . -B build -G "MinGW Makefiles"
+
+# 编译
+& "C:\Users\Kenny\tools\cmake-3.28.3-windows-x86_64\bin\cmake.exe" --build build
+```
+
+**方式二：临时添加 PATH（推荐，后续命令可直接用 cmake）（在项目根目录运行）**
+
+```powershell
+cd F:\09_Projects\CapsX
+$env:PATH = "C:\Users\Kenny\tools\mingw64\bin;C:\Users\Kenny\tools\cmake-3.28.3-windows-x86_64\bin;" + $env:PATH
+
+# 配置
+cmake -S . -B build -G "MinGW Makefiles"
+
+# 编译
+cmake --build build
+```
+
+**方式三：直接使用 mingw32-make（需已执行过 CMake 配置）（在项目根目录运行）**
+
+```powershell
+cd F:\09_Projects\CapsX
+C:\Users\Kenny\tools\mingw64\bin\mingw32-make.exe -C build
+```
+
+> **注意**: 首次构建或新增源文件后，必须先执行 CMake 配置步骤重新生成构建文件，再执行编译。
+
+#### 6.2.3 编译器与平台兼容性
+
+| 编译器 | 支持状态 | 说明 |
+|--------|---------|------|
+| MinGW GCC 16.1.0+ | ✅ 当前使用 | `-municode` 启用 wWinMain 入口，`-static` 消除 DLL 依赖 |
+| MSVC 19.30+（VS 2022 17.0+） | ✅ 兼容 | `/utf-8` 源码字符集，`_CRT_SECURE_NO_WARNINGS` 抑制警告 |
+| 目标平台 | Windows 10 22H2+ / Windows 11 x64 | |
+| 编译配置 | Release: `-O2 -DNDEBUG`; Debug: `-O0 -g` | |
 
 ### 6.3 发布方案
 

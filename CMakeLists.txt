@@ -22,6 +22,7 @@ add_executable(CapsX WIN32
     src/core/state_machine.cpp
     src/core/input_simulator.cpp
     src/core/binding_manager.cpp
+    src/core/single_instance.cpp
     src/ui/tray_icon.cpp
     src/ui/tray_icon_drawer.cpp
     src/utils/logger.cpp
