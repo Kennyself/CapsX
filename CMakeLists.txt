@@ -10,6 +10,11 @@ if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
 
+# MinGW: 启用 Unicode 入口点（wWinMain），静态链接运行时库以消除 DLL 依赖
+if (MINGW)
+    add_link_options(-municode -static -static-libgcc -static-libstdc++)
+endif()
+
 # 源文件
 add_executable(CapsX WIN32
     src/main.cpp
