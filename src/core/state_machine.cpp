@@ -74,17 +74,24 @@ LRESULT StateMachine::ProcessKeyEvent(WPARAM wParam, LPARAM lParam)
 
             if (isShortPress)
             {
-                // 短按：模拟 CapsLock 切换，然后放行 UP
-                // Why: 模拟事件先于物理 UP 被 OS 处理，
-                //      LED 仅更新一次，无闪烁。
-                //      放行 UP 让 OS 收到完整按键周期，
-                //      避免 OS 认为按键仍处于按下状态。
+                // 短按：模拟 CapsLock 切换，拦截物理 UP
+                // Why: 模拟的 CapsLock DOWN+UP 事件已完整表达了切换意图，
+                //      物理 UP 不需要再放行给 OS。
+                //      放行物理 UP 会导致 OS 收到一个没有对应 DOWN 的孤立 UP，
+                //      在某些系统上该孤立 UP 会触发额外的 CapsLock 切换，
+                //      使短按实际产生两次切换（模拟 + 物理 UP），效果抵消，
+                //      但 m_expectedCapsLockOn 只记录一次，后续长按时
+                //      硬件撤销逻辑因 expected 与 actual 错位而误触发，
+                //      导致每次长按都可见地切换一次 CapsLock。
+                //      拦截物理 UP 后，OS 仅看到模拟的完整 DOWN+UP 周期，
+                //      CapsLock 状态与 m_expectedCapsLockOn 始终同步。
                 g_inputSimulator.SimulateCapsLockToggle();
                 m_expectedCapsLockOn = !m_expectedCapsLockOn;
-                g_logger.LogDebug("CapsLock UP: short press toggle + pass through (elapsed=%lldms)", elapsedMs);
+                g_logger.LogDebug("CapsLock UP: short press toggle + suppress (elapsed=%lldms)", elapsedMs);
 
+                m_passedThroughKeys.clear();
                 m_state = CapsLockState::Idle;
-                return 0;  // 放行 UP
+                return 1;  // 拦截物理 UP，OS 仅处理模拟的完整切换周期
             }
             else
             {
@@ -94,6 +101,7 @@ LRESULT StateMachine::ProcessKeyEvent(WPARAM wParam, LPARAM lParam)
                 //      触发 LED 状态纠正导致闪烁。
                 g_logger.LogDebug("CapsLock UP: long/combo, suppress (elapsed=%lldms)", elapsedMs);
 
+                m_passedThroughKeys.clear();
                 m_state = CapsLockState::Idle;
                 return 1;  // 拦截 UP
             }
@@ -126,13 +134,29 @@ LRESULT StateMachine::ProcessKeyEvent(WPARAM wParam, LPARAM lParam)
             const KeyBinding* binding = g_bindingManager.FindBinding(vkCode);
             if (binding != nullptr && binding->enabled)
             {
+                // 有绑定的按键：拦截并转译为对应快捷键
                 g_inputSimulator.SimulateKey(static_cast<WORD>(binding->targetVk), binding->withShift);
                 return 1;
             }
-            return 1;
+
+            // 无绑定的按键：放行，记录以便 UP 也放行
+            // Why: 组合键模式下，有绑定的键拦截转译，无绑定的键应正常输入。
+            //      放行 DOWN 后必须同步放行 UP，否则 OS 认为按键仍处于按下状态。
+            m_passedThroughKeys.insert(vkCode);
+            g_logger.LogDebug("Key without binding passed through: vk=%u", vkCode);
+            return 0;
         }
         else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
         {
+            // 无绑定的按键 UP 需要放行，有绑定的按键 UP 继续拦截
+            // Why: 有绑定的按键 DOWN 被拦截并模拟了目标键（含 DOWN+UP），
+            //      原始键的 UP 不应到达 OS。无绑定的按键 DOWN 已放行，
+            //      对应 UP 必须放行，否则 OS 认为按键仍处于按下状态。
+            if (m_passedThroughKeys.count(vkCode))
+            {
+                m_passedThroughKeys.erase(vkCode);
+                return 0;
+            }
             return 1;
         }
     }
@@ -147,6 +171,7 @@ void StateMachine::SetEnabled(bool enabled)
     {
         m_state = CapsLockState::Idle;
         m_comboKeyPressed = false;
+        m_passedThroughKeys.clear();
         g_logger.LogInfo("CapsX disabled");
     }
     else

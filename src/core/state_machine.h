@@ -23,6 +23,7 @@
 
 #include <Windows.h>
 #include <chrono>
+#include <set>
 
 enum class CapsLockState
 {
@@ -48,11 +49,17 @@ public:
 private:
     CapsLockState m_state = CapsLockState::Idle;    // 当前状态机状态
     bool m_enabled = true;                          // CapsX 是否启用
-    int m_thresholdMs = 300;                        // 长按判定阈值（毫秒）
+    int m_thresholdMs = 150;                        // 长按判定阈值（毫秒）
     bool m_expectedCapsLockOn = false;              // 期望的 CapsLock 开关状态
 
     std::chrono::steady_clock::time_point m_pressStartTime;  // CapsLock DOWN 时刻
     bool m_comboKeyPressed = false;                         // 是否有组合键按下
+
+    // 无绑定按键追踪集合
+    // Why: 组合键模式下，有绑定的按键拦截并转译，无绑定的按键需要放行。
+    //      放行 DOWN 后必须同步放行 UP，否则 OS 认为按键仍处于按下状态。
+    //      通过此集合记录哪些键的 DOWN 已放行，确保对应 UP 也放行。
+    std::set<DWORD> m_passedThroughKeys;
 
     bool IsModifierKey(DWORD vkCode) const;
     bool IsCapsLockKey(DWORD vkCode) const;
