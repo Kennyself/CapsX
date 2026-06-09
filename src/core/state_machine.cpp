@@ -1,68 +1,46 @@
 /**
  * @file state_machine.cpp
- * @brief CapsLock 状态机实现
+ * @brief CapsLock 状态机实现（Interception 驱动方案）
  *
  * 策略：
- *   - DOWN：拦截 + 检测/撤销硬件意外 LED 切换
- *   - UP（短按）：放行 + 模拟切换（LED 仅切换一次）
- *   - UP（长按）：拦截（不需要切换）
+ *   - DOWN：suppress（OS 不收到，LED 不切换）
+ *   - UP（短按）：suppress + 注入 CapsLock toggle
+ *   - UP（长按/修饰）：suppress
  */
 
 #include "core/state_machine.h"
-#include "core/input_simulator.h"
 #include "core/binding_manager.h"
 #include "utils/logger.h"
 
-LRESULT StateMachine::ProcessKeyEvent(WPARAM wParam, LPARAM lParam)
+StateMachine g_stateMachine;
+
+ProcessDecision StateMachine::ProcessKeyEvent(WPARAM wParam, DWORD vkCode,
+    InterceptionDevice device, bool isExtended)
 {
     if (!m_enabled)
     {
-        return 0;
+        // 禁用状态：所有按键放行
+        return {ProcessDecisionAction::PassThrough, 0, false, device};
     }
-
-    KBDLLHOOKSTRUCT* kb = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
-
-    // 忽略注入事件（SendInput/keybd_event 产生的），防止重入
-    if (kb->flags & LLKHF_INJECTED)
-    {
-        return 0;
-    }
-
-    DWORD vkCode = kb->vkCode;
 
     // ─── CapsLock 按键处理 ───
     if (IsCapsLockKey(vkCode))
     {
-        if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
+        if (wParam == WM_KEYDOWN)
         {
             if (m_state == CapsLockState::Idle)
             {
-                // 检测硬件/驱动是否意外切换了 CapsLock 状态
-                // Why: 某些键盘硬件在物理 CapsLock DOWN 时会切换 LED，
-                //      即使钩子拦截了 DOWN 事件。拦截 UP 后 OS 无法纠正，
-                //      导致长按期间 LED 处于错误状态，产生闪烁。
-                //      通过 GetAsyncKeyState 检测实际状态是否与期望状态不同，
-                //      如果不同则立即模拟一次 CapsLock 切换来撤销，
-                //      撤销在 < 5ms 内完成，闪烁不可感知。
-                SHORT keyState = GetAsyncKeyState(VK_CAPITAL);
-                bool actualCapsLockOn = (keyState & 0x0001) != 0;
-
-                if (actualCapsLockOn != m_expectedCapsLockOn)
-                {
-                    // 硬件/驱动已意外切换 CapsLock，立即撤销
-                    g_inputSimulator.SimulateCapsLockToggle();
-                    g_logger.LogDebug("CapsLock DOWN: hardware toggle detected, undo applied (expected=%d, actual=%d)",
-                        m_expectedCapsLockOn, actualCapsLockOn);
-                }
-
+                // CapsLock DOWN：suppress，开始计时
+                // Why: Interception 在 kbdclass 之下拦截，
+                //      OS 从未收到 DOWN，LED 不切换，无需撤销逻辑
                 m_pressStartTime = std::chrono::steady_clock::now();
                 m_comboKeyPressed = false;
                 m_state = CapsLockState::Pressing;
-                g_logger.LogDebug("CapsLock DOWN intercepted, Pressing");
+                g_logger.LogInfo("CapsLock DOWN suppressed, Pressing");
             }
-            return 1;  // 拦截 DOWN
+            return {ProcessDecisionAction::Suppress, 0, false, device};
         }
-        else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+        else if (wParam == WM_KEYUP)
         {
             auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - m_pressStartTime
@@ -74,36 +52,24 @@ LRESULT StateMachine::ProcessKeyEvent(WPARAM wParam, LPARAM lParam)
 
             if (isShortPress)
             {
-                // 短按：模拟 CapsLock 切换，拦截物理 UP
-                // Why: 模拟的 CapsLock DOWN+UP 事件已完整表达了切换意图，
-                //      物理 UP 不需要再放行给 OS。
-                //      放行物理 UP 会导致 OS 收到一个没有对应 DOWN 的孤立 UP，
-                //      在某些系统上该孤立 UP 会触发额外的 CapsLock 切换，
-                //      使短按实际产生两次切换（模拟 + 物理 UP），效果抵消，
-                //      但 m_expectedCapsLockOn 只记录一次，后续长按时
-                //      硬件撤销逻辑因 expected 与 actual 错位而误触发，
-                //      导致每次长按都可见地切换一次 CapsLock。
-                //      拦截物理 UP 后，OS 仅看到模拟的完整 DOWN+UP 周期，
-                //      CapsLock 状态与 m_expectedCapsLockOn 始终同步。
-                g_inputSimulator.SimulateCapsLockToggle();
-                m_expectedCapsLockOn = !m_expectedCapsLockOn;
-                g_logger.LogDebug("CapsLock UP: short press toggle + suppress (elapsed=%lldms)", elapsedMs);
-
+                // 短按：suppress 物理 UP，注入 CapsLock toggle
+                // Why: 物理 UP 被 suppress，OS 不收到。
+                //      注入 CapsLock DOWN+UP 让 kbdclass 正常切换一次大小写，
+                //      LED 由 kbdclass 通过 IOCTL 更新。
                 m_passedThroughKeys.clear();
                 m_state = CapsLockState::Idle;
-                return 1;  // 拦截物理 UP，OS 仅处理模拟的完整切换周期
+                g_logger.LogInfo("CapsLock UP: short press, inject toggle (elapsed=%lldms)", elapsedMs);
+                return {ProcessDecisionAction::InjectCapsLockToggle, 0, false, device};
             }
             else
             {
-                // 长按或组合键：不需要切换，拦截 UP
-                // Why: CapsLock 从未被 OS 切换（DOWN 拦截 + 硬件撤销已完成），
-                //      不需要恢复操作。拦截 UP 防止 OS 收到不匹配的 UP 事件
-                //      触发 LED 状态纠正导致闪烁。
-                g_logger.LogDebug("CapsLock UP: long/combo, suppress (elapsed=%lldms)", elapsedMs);
-
+                // 长按或组合键：suppress，不注入任何事件
+                // Why: CapsLock 从未被 OS 切换（DOWN 已 suppress），
+                //      不需要任何恢复操作。
                 m_passedThroughKeys.clear();
                 m_state = CapsLockState::Idle;
-                return 1;  // 拦截 UP
+                g_logger.LogInfo("CapsLock UP: long/combo, suppress (elapsed=%lldms)", elapsedMs);
+                return {ProcessDecisionAction::Suppress, 0, false, device};
             }
         }
     }
@@ -111,57 +77,52 @@ LRESULT StateMachine::ProcessKeyEvent(WPARAM wParam, LPARAM lParam)
     // ─── 修饰键放行 ───
     if (IsModifierKey(vkCode))
     {
-        if (m_state == CapsLockState::Pressing &&
-            (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
+        if (m_state == CapsLockState::Pressing && wParam == WM_KEYDOWN)
         {
             m_comboKeyPressed = true;
         }
-        return 0;
+        return {ProcessDecisionAction::PassThrough, 0, false, device};
     }
 
     // ─── CapsLock 持按期间，处理其他按键 ───
     if (m_state == CapsLockState::Pressing || m_state == CapsLockState::Modifier)
     {
-        if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
+        if (wParam == WM_KEYDOWN)
         {
             if (m_state == CapsLockState::Pressing)
             {
                 m_comboKeyPressed = true;
                 m_state = CapsLockState::Modifier;
-                g_logger.LogDebug("Entering modifier mode");
+                g_logger.LogInfo("Entering modifier mode");
             }
 
             const KeyBinding* binding = g_bindingManager.FindBinding(vkCode);
             if (binding != nullptr && binding->enabled)
             {
-                // 有绑定的按键：拦截并转译为对应快捷键
-                g_inputSimulator.SimulateKey(static_cast<WORD>(binding->targetVk), binding->withShift);
-                return 1;
+                // 有绑定的按键：suppress + 注入目标键
+                return {ProcessDecisionAction::InjectKey,
+                    static_cast<WORD>(binding->targetVk), binding->withShift, device};
             }
 
             // 无绑定的按键：放行，记录以便 UP 也放行
-            // Why: 组合键模式下，有绑定的键拦截转译，无绑定的键应正常输入。
-            //      放行 DOWN 后必须同步放行 UP，否则 OS 认为按键仍处于按下状态。
             m_passedThroughKeys.insert(vkCode);
-            g_logger.LogDebug("Key without binding passed through: vk=%u", vkCode);
-            return 0;
+            g_logger.LogInfo("Key without binding passed through: vk=%u", vkCode);
+            return {ProcessDecisionAction::PassThrough, 0, false, device};
         }
-        else if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+        else if (wParam == WM_KEYUP)
         {
             // 无绑定的按键 UP 需要放行，有绑定的按键 UP 继续拦截
-            // Why: 有绑定的按键 DOWN 被拦截并模拟了目标键（含 DOWN+UP），
-            //      原始键的 UP 不应到达 OS。无绑定的按键 DOWN 已放行，
-            //      对应 UP 必须放行，否则 OS 认为按键仍处于按下状态。
             if (m_passedThroughKeys.count(vkCode))
             {
                 m_passedThroughKeys.erase(vkCode);
-                return 0;
+                return {ProcessDecisionAction::PassThrough, 0, false, device};
             }
-            return 1;
+            return {ProcessDecisionAction::Suppress, 0, false, device};
         }
     }
 
-    return 0;
+    // ─── 非 CapsLock 持按状态：所有按键放行 ───
+    return {ProcessDecisionAction::PassThrough, 0, false, device};
 }
 
 void StateMachine::SetEnabled(bool enabled)
@@ -188,12 +149,6 @@ CapsLockState StateMachine::GetState() const
 void StateMachine::SetThreshold(int thresholdMs)
 {
     m_thresholdMs = thresholdMs;
-}
-
-void StateMachine::InitExpectedState(bool capsLockOn)
-{
-    m_expectedCapsLockOn = capsLockOn;
-    g_logger.LogInfo("Expected CapsLock state initialized: %s", capsLockOn ? "ON" : "OFF");
 }
 
 bool StateMachine::IsModifierKey(DWORD vkCode) const

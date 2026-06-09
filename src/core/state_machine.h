@@ -2,20 +2,15 @@
  * @file state_machine.h
  * @brief CapsLock 状态机
  *
- * 策略：
- *   - CapsLock DOWN：拦截（阻止 OS 自动切换），同时检测并撤销
- *     硬件/驱动可能产生的意外 LED 切换，消除长按起始闪烁
- *   - CapsLock UP（短按）：放行，在放行前模拟 CapsLock 切换，
- *     模拟事件先于物理 UP 被 OS 处理，LED 仅切换一次
- *   - CapsLock UP（长按/修饰）：拦截，不需要切换
+ * 策略（Interception 驱动方案）：
+ *   - CapsLock DOWN：suppress（不 send），OS 从未收到，LED 不切换
+ *   - CapsLock UP（短按）：suppress + 注入 CapsLock DOWN+UP，OS 切换大小写
+ *   - CapsLock UP（长按/修饰）：suppress，不注入任何事件
  *
- * Why: 长按起始闪烁的根因：某些键盘硬件/驱动在物理 CapsLock DOWN
- *      时会切换 LED 状态，即使钩子拦截了 DOWN 事件。
- *      长按时 UP 也被拦截，OS 无法纠正这个意外 LED 切换，
- *      导致 LED 在长按期间处于错误状态，产生可见闪烁。
- *      修复方法：在 DOWN 时通过 GetAsyncKeyState 检测是否发生了
- *      意外切换，如果检测到则立即模拟一次 CapsLock 切换来撤销，
- *      撤销发生在 < 5ms 内，闪烁不可感知。
+ * Why: Interception 驱动位于 kbdclass 之下，suppress CapsLock DOWN 时
+ *      OS 从未收到事件，LED 不意外切换，从根本上消除了 WH_KEYBOARD_LL
+ *      方案中硬件 LED 闪烁和短按后长按误切换的 bug。
+ *      不再需要 GetAsyncKeyState 检测和 SimulateCapsLockToggle 撤销逻辑。
  */
 
 #ifndef CAPSX_CORE_STATE_MACHINE_H_
@@ -24,6 +19,26 @@
 #include <Windows.h>
 #include <chrono>
 #include <set>
+
+// Interception 设备类型前置声明
+typedef int InterceptionDevice;
+
+// 处理决策：Interception 钩子根据此决策决定 suppress / send / inject
+enum class ProcessDecisionAction
+{
+    Suppress,             // 拦截：不调用 interception_send
+    PassThrough,          // 放行：调用 interception_send 发送原始事件
+    InjectCapsLockToggle, // 注入 CapsLock DOWN+UP（短按行为）
+    InjectKey             // 注入绑定目标按键 DOWN+UP
+};
+
+struct ProcessDecision
+{
+    ProcessDecisionAction action = ProcessDecisionAction::Suppress;
+    WORD targetVk = 0;            // InjectKey 时的目标键 VK code
+    bool withShift = false;       // InjectKey 时是否附加 Shift
+    InterceptionDevice device = 0; // 注入时的目标设备
+};
 
 enum class CapsLockState
 {
@@ -35,22 +50,25 @@ enum class CapsLockState
 class StateMachine
 {
 public:
-    LRESULT ProcessKeyEvent(WPARAM wParam, LPARAM lParam);
+    /**
+     * @brief 处理按键事件，返回拦截/放行/注入决策
+     * @param wParam 按键事件类型（WM_KEYDOWN / WM_KEYUP）
+     * @param vkCode 虚拟键码
+     * @param device Interception 键盘设备
+     * @param isExtended 是否为扩展键（E0 前缀）
+     * @return ProcessDecision 处理决策
+     */
+    ProcessDecision ProcessKeyEvent(WPARAM wParam, DWORD vkCode,
+        InterceptionDevice device, bool isExtended);
+
     void SetEnabled(bool enabled);
     CapsLockState GetState() const;
     void SetThreshold(int thresholdMs);
-
-    /**
-     * @brief 初始化期望的 CapsLock 状态
-     * @param capsLockOn 当前 CapsLock 是否为 ON
-     */
-    void InitExpectedState(bool capsLockOn);
 
 private:
     CapsLockState m_state = CapsLockState::Idle;    // 当前状态机状态
     bool m_enabled = true;                          // CapsX 是否启用
     int m_thresholdMs = 150;                        // 长按判定阈值（毫秒）
-    bool m_expectedCapsLockOn = false;              // 期望的 CapsLock 开关状态
 
     std::chrono::steady_clock::time_point m_pressStartTime;  // CapsLock DOWN 时刻
     bool m_comboKeyPressed = false;                         // 是否有组合键按下
