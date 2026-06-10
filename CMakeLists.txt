@@ -35,6 +35,8 @@ add_executable(CapsX WIN32
     # Why: INTERCEPTION_STATIC 模式下，API 函数编译为普通函数而非 DLL 导入，
     #      分发时只需 CapsX.exe 一个文件，不需要 interception.dll
     src/third_party/interception/library/interception.c
+    # Windows 资源文件，包含 exe 文件图标
+    res/app.rc
 )
 
 target_include_directories(CapsX PRIVATE

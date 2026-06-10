@@ -1,0 +1,6 @@
+/**
+ * @file app.rc
+ * @brief Windows 资源文件，定义 exe 文件图标
+ */
+
+APP_ICON ICON "app.ico"
