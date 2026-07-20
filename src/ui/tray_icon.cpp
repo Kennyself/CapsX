@@ -6,17 +6,19 @@
 #include "ui/tray_icon.h"
 #include "ui/tray_icon_drawer.h"
 #include "core/state_machine.h"
+#include "utils/auto_start.h"
 #include "utils/logger.h"
 
 // Tray icon callback message ID
 #define WM_TRAYICON (WM_USER + 1)
 
 // Menu command IDs
-#define IDM_ENABLE   1001
-#define IDM_DISABLE  1002
-#define IDM_SETTINGS 1003
-#define IDM_ABOUT    1004
-#define IDM_EXIT     1005
+#define IDM_ENABLE    1001
+#define IDM_DISABLE   1002
+#define IDM_SETTINGS  1003
+#define IDM_ABOUT     1004
+#define IDM_EXIT      1005
+#define IDM_AUTOSTART 1006
 
 // Global instance
 TrayIcon g_trayIcon;
@@ -150,6 +152,15 @@ LRESULT CALLBACK TrayIcon::TrayWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
             AppendMenuW(hMenu, disableFlags, IDM_DISABLE, L"Disable");
 
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+
+            // 开机自启：勾选状态与注册表 Run 键同步
+            UINT autoStartFlags = MF_STRING;
+            if (g_autoStart.IsEnabled())
+            {
+                autoStartFlags |= MF_CHECKED;
+            }
+            AppendMenuW(hMenu, autoStartFlags, IDM_AUTOSTART, L"Start with Windows");
+
             AppendMenuW(hMenu, MF_STRING, IDM_SETTINGS, L"Settings");
             AppendMenuW(hMenu, MF_STRING, IDM_ABOUT,    L"About CapsX");
             AppendMenuW(hMenu, MF_STRING, IDM_EXIT,     L"Exit");
@@ -197,9 +208,30 @@ LRESULT CALLBACK TrayIcon::TrayWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
             break;
         }
 
+        case IDM_AUTOSTART:
+        {
+            // 切换开机自启：成功后菜单下次弹出时会反映新状态
+            bool targetEnabled = !g_autoStart.IsEnabled();
+            if (!g_autoStart.SetEnabled(targetEnabled))
+            {
+                MessageBoxW(NULL,
+                    L"Failed to update Start with Windows setting.\n"
+                    L"Please check registry permissions and try again.",
+                    L"CapsX",
+                    MB_OK | MB_ICONWARNING
+                );
+            }
+            break;
+        }
+
         case IDM_SETTINGS:
         {
-            MessageBoxW(NULL, L"Settings UI will be available in Phase 2", L"CapsX", MB_OK | MB_ICONINFORMATION);
+            MessageBoxW(NULL,
+                L"Settings UI will be available in Phase 2.\n\n"
+                L"Tip: Use \"Start with Windows\" in the tray menu to toggle auto-start.",
+                L"CapsX",
+                MB_OK | MB_ICONINFORMATION
+            );
             break;
         }
         }

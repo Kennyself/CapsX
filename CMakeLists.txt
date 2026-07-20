@@ -31,6 +31,7 @@ add_executable(CapsX WIN32
     src/ui/tray_icon_drawer.cpp
     src/utils/logger.cpp
     src/utils/string_utils.cpp
+    src/utils/auto_start.cpp
     # Interception 用户态库源码直接编译进 CapsX.exe
     # Why: INTERCEPTION_STATIC 模式下，API 函数编译为普通函数而非 DLL 导入，
     #      分发时只需 CapsX.exe 一个文件，不需要 interception.dll
@@ -49,4 +50,5 @@ target_include_directories(CapsX PRIVATE
 target_link_libraries(CapsX PRIVATE
     comctl32   # ListView、Spin 控件
     shell32    # Shell_NotifyIcon
+    advapi32   # 注册表开机自启（RegOpenKeyEx / RegSetValueEx）
 )

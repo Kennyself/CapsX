@@ -2,6 +2,7 @@
 
 # CMake build output
 build/
+build-mingw/
 
 # Visual Studio
 .vs/
