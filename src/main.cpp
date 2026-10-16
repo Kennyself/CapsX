@@ -2,7 +2,7 @@
  * @file main.cpp
  * @brief CapsX 程序入口
  *
- * 初始化日志、Interception 驱动拦截、状态机和托盘图标，
+ * 初始化日志、必要时自动安装 Interception 驱动、状态机和托盘图标，
  * 然后运行消息循环等待托盘事件。
  * Interception 接收线程在独立线程中运行。
  */
@@ -11,6 +11,7 @@
 #include "core/state_machine.h"
 #include "core/binding_manager.h"
 #include "core/single_instance.h"
+#include "setup/driver_setup.h"
 #include "ui/tray_icon.h"
 #include "utils/logger.h"
 
@@ -22,12 +23,22 @@ bool g_running = true;
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     // 抑制未使用参数警告
-    (void)hInstance; (void)hPrevInstance; (void)pCmdLine; (void)nCmdShow;
+    (void)hInstance;
+    (void)hPrevInstance;
+    (void)nCmdShow;
 
     // 初始化日志
     if (!g_logger.Init())
     {
         OutputDebugStringW(L"CapsX: Logger init failed\n");
+    }
+
+    // 自检只确认安装器已经打进 exe，不碰驱动，也不占用单实例锁
+    if (DriverSetup::IsVerifySwitch(pCmdLine))
+    {
+        const bool verified = DriverSetup::VerifyEmbeddedInstaller();
+        g_logger.Shutdown();
+        return verified ? 0 : 1;
     }
 
     // 单实例检测：拒绝重复启动
@@ -42,38 +53,37 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
     g_logger.LogInfo("CapsX v1.0.0 starting");
 
-    // 检测 Interception 驱动是否已安装
-    // Why: Interception 驱动需要用户手动安装（管理员权限 + 重启），
-    //      未安装时 CapsX 无法工作，必须提示用户
-    if (!InterceptionHook::IsDriverAvailable())
+    // 驱动未就绪时自动安装。复制一个 CapsX.exe 即可，不再要求手敲命令。
+    // Why: 内核驱动无法在不重启的情况下生效。安全启动不能由程序关闭，
+    //      所以只在重启后仍然加载失败时才提示用户自己处理。
+    if (InterceptionHook::IsDriverAvailable())
     {
-        // 获取 CapsX.exe 所在目录，拼接安装工具路径
-        // Why: 让用户直接看到安装工具的位置，不用自己去找
-        WCHAR exePath[MAX_PATH] = {};
-        GetModuleFileNameW(nullptr, exePath, MAX_PATH);
-        WCHAR installHint[MAX_PATH * 2] = {};
-        swprintf_s(installHint,
-            L"Interception 驱动未安装，CapsX 无法运行。\n\n"
-            L"请按以下步骤安装驱动：\n\n"
-            L"步骤一：打开管理员 CMD 或 PowerShell\n"
-            L"  搜索 cmd → 右键「以管理员身份运行」\n\n"
-            L"步骤二：运行安装命令\n"
-            L"  cd /d \"%s\"\n"
-            L"  install-interception.exe /install\n\n"
-            L"步骤三：启用测试模式（Win10/11 必须）\n"
-            L"  bcdedit /set testsigning on\n\n"
-            L"步骤四：重启计算机\n"
-            L"  shutdown /r /t 5\n\n"
-            L"说明：\n"
-            L"  • 安装工具 install-interception.exe 位于 CapsX 同目录下\n"
-            L"  • 测试模式启用后桌面右下角会显示水印，属正常现象\n"
-            L"  • 将 CapsX.exe 和 install-interception.exe 一起复制即可在新电脑使用",
-            exePath);
-        MessageBoxW(nullptr, installHint, L"CapsX — 驱动未安装", MB_OK | MB_ICONERROR);
-        g_logger.LogError("Interception driver not available, exiting");
+        DriverSetup::ClearPendingState();
+    }
+    else
+    {
+        const SetupAction action = DriverSetup::Prepare(pCmdLine);
+        if (action == SetupAction::RelaunchInstall)
+        {
+            // 先放开单实例锁，提权后的新进程才能启动
+            g_singleInstance.Release();
+            if (!DriverSetup::RelaunchElevated(L"--install-driver"))
+            {
+                MessageBoxW(nullptr,
+                    L"没有获得管理员权限，CapsX 没有修改系统设置。",
+                    L"CapsX",
+                    MB_OK | MB_ICONWARNING);
+                g_logger.Shutdown();
+                return 1;
+            }
+
+            g_logger.Shutdown();
+            return 0;
+        }
+
         g_singleInstance.Release();
         g_logger.Shutdown();
-        return 1;
+        return action == SetupAction::ExitOk ? 0 : 1;
     }
 
     // 创建托盘图标

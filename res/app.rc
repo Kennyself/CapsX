@@ -1,6 +1,11 @@
 /**
  * @file app.rc
- * @brief Windows 资源文件，定义 exe 文件图标
+ * @brief Windows 资源文件，定义 exe 图标和内置驱动安装器
  */
 
+#include "../src/setup/resource.h"
+
 APP_ICON ICON "app.ico"
+
+// 官方 Interception 命令行安装器。打进 exe 后，新电脑只需要复制 CapsX.exe。
+IDR_INTERCEPTION_INSTALLER RCDATA "../src/third_party/interception/install-interception.exe"
