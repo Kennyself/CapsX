@@ -51,7 +51,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         return 1;
     }
 
-    g_logger.LogInfo("CapsX v1.0.0 starting");
+    g_logger.LogInfo("CapsX v1.1.0 starting");
 
     // 驱动未就绪时自动安装。复制一个 CapsX.exe 即可，不再要求手敲命令。
     // Why: 内核驱动无法在不重启的情况下生效。安全启动不能由程序关闭，

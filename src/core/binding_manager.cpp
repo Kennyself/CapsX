@@ -30,10 +30,11 @@ static const KeyBinding DEFAULT_BINDINGS[] = {
     { 'J',      VK_LEFT,  true,  true  },  // CapsLock + J → Shift+←（向左选中）
     { 'L',      VK_RIGHT, true,  true  },  // CapsLock + L → Shift+→（向右选中）
 
-    // 文本选择扩展（SEL-05, SEL-06）
-    // CapsLock + Shift + A/G → Shift + Home/End
-    // Why: 这些通过 Shift 修饰键组合实现，需要在钩子中额外处理
-    //      当前暂不单独绑定，由状态机在 Shift 组合时自动处理
+    // 选中到行首/行尾（SEL-05, SEL-06）
+    // Why: H 在 G 右边，分号在 L 右边，都在主键排上。选中到行首或行尾时不用再按 Shift。
+    //      VK_OEM_1 是美式 QWERTY 上产生 ";" 的键，钩子用 scan code 0x27 映射到它。
+    { 'H',       VK_HOME,  true,  true  },  // CapsLock + H → Shift+Home（选中到行首）
+    { VK_OEM_1,  VK_END,   true,  true  },  // CapsLock + ; → Shift+End（选中到行尾）
 };
 
 static const int BINDING_COUNT = sizeof(DEFAULT_BINDINGS) / sizeof(DEFAULT_BINDINGS[0]);

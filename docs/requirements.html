@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CapsX 需求规格</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --fg: #1a1916;
+    --muted: #5c5a55;
+    --border: #e8e5df;
+    --accent: #8a3b24;
+    --move: #1c4f73;
+    --pick: #1f5c45;
+    --accent-soft: color-mix(in oklch, var(--accent) 14%, transparent);
+    --move-soft: color-mix(in oklch, var(--move) 12%, var(--surface));
+    --pick-soft: color-mix(in oklch, var(--pick) 14%, var(--surface));
+    --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
+    --font-display: "Iowan Old Style", "Palatino Linotype", "Songti SC", "PMingLiU", Georgia, serif;
+    --font-body: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 500; text-wrap: balance; }
+  h1 { margin: 12px 0 0; font-size: clamp(44px, 6vw, 72px); line-height: 1.05; letter-spacing: -0.02em; }
+  h2 { margin: 0; font-size: clamp(36px, 4vw, 52px); line-height: 1.12; letter-spacing: -0.02em; }
+  h3 { margin: 28px 0 8px; font-size: 26px; letter-spacing: -0.01em; }
+  p { text-wrap: pretty; max-width: 65ch; }
+  a { color: inherit; }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+  .topnav {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 20px;
+    padding: 14px 32px;
+    background: color-mix(in oklch, var(--bg) 88%, transparent);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+  }
+  .brand { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .nav-links a { font-size: 15px; font-weight: 550; text-decoration: none; min-height: 32px; display: inline-flex; align-items: center; }
+  .nav-links a:hover, .nav-links a[aria-current="page"] { color: var(--accent); }
+  .page { max-width: 1040px; margin: 0 auto; padding: 56px 32px 120px; }
+  .mark { margin: 0; font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .lead { max-width: 60ch; font-size: 19px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
+  .meta dd, .meta dt { margin: 0; }
+  section { scroll-margin-top: 72px; margin-top: 72px; }
+  .sec-head {
+    display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 20px;
+    margin-bottom: 24px; padding-bottom: 16px;
+    border-bottom: 2px solid color-mix(in oklch, var(--accent) 35%, var(--border));
+  }
+  .sec-index { margin: 0; font-family: var(--font-display); font-size: clamp(44px, 5vw, 64px); line-height: 0.8; letter-spacing: -0.03em; color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); margin: 12px 0 24px; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 12px; letter-spacing: 0.04em; color: var(--muted); font-weight: 550; }
+  tr.fresh td { background: var(--pick-soft); }
+  code, .mono { font-family: var(--font-mono); font-size: 13px; }
+  .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 18px 20px; }
+  .card h3 { margin: 0 0 8px; }
+  .card p { margin: 0; }
+  @media (max-width: 920px) {
+    .topnav, .page { padding-left: 20px; padding-right: 20px; }
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="文档">
+  <a class="brand" href="user-manual.html">CapsX</a>
+  <div class="nav-links">
+    <a href="user-manual.html">手册</a>
+    <a href="requirements.html" aria-current="page">需求</a>
+    <a href="technical-design.html">设计</a>
+  </div>
+</nav>
+<main class="page">
+  <header data-od-id="masthead">
+    <p class="mark">Requirements · v1.1.0</p>
+    <h1>需求规格</h1>
+    <p class="lead">把 CapsLock 变成修饰键。短按仍切换大小写；按住后再按主键区的字母，完成移动、选中和删除。</p>
+    <dl class="meta">
+      <div><dt class="sr">日期</dt><dd>更新于 2026-10-16</dd></div>
+      <div><dd>状态：部分实现</dd></div>
+      <div><dd>平台：Windows 10 / 11，64 位</dd></div>
+    </dl>
+  </header>
+
+  <section id="overview" data-od-id="overview">
+    <header class="sec-head"><p class="sec-index">01</p><div><h2>产品概述</h2></div></header>
+    <p>目标用户是经常打字的程序员和写作者，希望少用鼠标、少离开主键区。参考产品是 Capslox 与 Capslock+。</p>
+    <div class="cards">
+      <article class="card"><h3>短按不变</h3><p>按下后很快松开，大小写照常切换。</p></article>
+      <article class="card"><h3>长按无动作</h3><p>按住超过约 150 毫秒再松开，不切换大小写。</p></article>
+      <article class="card"><h3>组合不切换</h3><p>按住时再按别的键。有绑定就执行，没有绑定就照常输入。</p></article>
+    </div>
+  </section>
+
+  <section id="behavior" data-od-id="behavior">
+    <header class="sec-head"><p class="sec-index">02</p><div><h2>按键行为</h2></div></header>
+    <table>
+      <thead><tr><th>场景</th><th>操作</th><th>大小写</th></tr></thead>
+      <tbody>
+        <tr><td>短按</td><td>按下后 150 毫秒内松开，中间没有别的键</td><td>切换一次</td></tr>
+        <tr><td>长按</td><td>超过约 150 毫秒后松开，中间没有别的键</td><td>不切换</td></tr>
+        <tr><td>组合</td><td>按住 CapsLock 再按其他键</td><td>不切换</td></tr>
+      </tbody>
+    </table>
+    <p>长按阈值参数 <code>longPressThresholdMs</code> 的默认值是 150 毫秒。当前版本还不能在界面里修改。</p>
+  </section>
+
+  <section id="features" data-od-id="features">
+    <header class="sec-head"><p class="sec-index">03</p><div><h2>功能需求</h2></div></header>
+    <h3>光标移动</h3>
+    <table>
+      <thead><tr><th>编号</th><th>快捷键</th><th>功能</th></tr></thead>
+      <tbody>
+        <tr><td>CUR-01</td><td>CapsLock + E</td><td>上移</td></tr>
+        <tr><td>CUR-02</td><td>CapsLock + D</td><td>下移</td></tr>
+        <tr><td>CUR-03</td><td>CapsLock + S</td><td>左移</td></tr>
+        <tr><td>CUR-04</td><td>CapsLock + F</td><td>右移</td></tr>
+        <tr><td>CUR-05</td><td>CapsLock + A</td><td>行首</td></tr>
+        <tr><td>CUR-06</td><td>CapsLock + G</td><td>行尾</td></tr>
+        <tr><td>CUR-07</td><td>CapsLock + W</td><td>向后删除（退格）</td></tr>
+        <tr><td>CUR-08</td><td>CapsLock + R</td><td>向前删除（Delete）</td></tr>
+      </tbody>
+    </table>
+    <h3>文本选择</h3>
+    <p>v1.1.0 新增两行，用绿色标出。H 选中到行首，分号选中到行尾，这两键自己带上 Shift。</p>
+    <table>
+      <thead><tr><th>编号</th><th>快捷键</th><th>功能</th></tr></thead>
+      <tbody>
+        <tr><td>SEL-01</td><td>CapsLock + I</td><td>向上选中</td></tr>
+        <tr><td>SEL-02</td><td>CapsLock + K</td><td>向下选中</td></tr>
+        <tr><td>SEL-03</td><td>CapsLock + J</td><td>向左选中</td></tr>
+        <tr><td>SEL-04</td><td>CapsLock + L</td><td>向右选中</td></tr>
+        <tr class="fresh"><td>SEL-05</td><td>CapsLock + H</td><td>选中到行首</td></tr>
+        <tr class="fresh"><td>SEL-06</td><td>CapsLock + ;</td><td>选中到行尾</td></tr>
+      </tbody>
+    </table>
+    <h3>尚未提供</h3>
+    <p>功能键 F1–F12、双按启动器、翻译、大小写转换、设置界面、开机自启开关、应用黑名单和导入导出，仍列在需求里，当前程序没有这些界面或动作。</p>
+    <h3>已经提供的托盘与单实例</h3>
+    <ul>
+      <li>托盘常驻。左键启用或暂停，右键有 Enable、Disable、Settings、About、Exit。</li>
+      <li>Settings 会说明设置界面尚未提供。</li>
+      <li>重复启动时提示“CapsX 已在运行”，新实例退出。</li>
+      <li>首次运行安装键盘驱动，装完必须重启一次。</li>
+    </ul>
+  </section>
+
+  <section id="nfr" data-od-id="nfr">
+    <header class="sec-head"><p class="sec-index">04</p><div><h2>非功能需求</h2></div></header>
+    <table>
+      <thead><tr><th>类别</th><th>要求</th></tr></thead>
+      <tbody>
+        <tr><td>性能</td><td>钩子处理在 10 毫秒内。常驻内存低于 50 MB。空闲 CPU 低于 0.1%。启动短于 3 秒。</td></tr>
+        <tr><td>可靠性</td><td>大小写指示灯与系统状态一致。钩子失效后应能恢复。</td></tr>
+        <tr><td>兼容</td><td>安全启动或内存完整性打开时，驱动可能无法加载，需要用户自己处理。</td></tr>
+        <tr><td>安全</td><td>不记录按键正文，不上传数据。配置只存键位，不存输入内容。</td></tr>
+      </tbody>
+    </table>
+    <p>原文：<a href="requirements.md">requirements.md</a></p>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CapsX 用户手册</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --fg: #1a1916;
+    --muted: #5c5a55;
+    --border: #e8e5df;
+    --accent: #8a3b24;
+    --move: #1c4f73;
+    --pick: #1f5c45;
+    --accent-soft: color-mix(in oklch, var(--accent) 14%, transparent);
+    --move-soft: color-mix(in oklch, var(--move) 14%, var(--surface));
+    --pick-soft: color-mix(in oklch, var(--pick) 14%, var(--surface));
+    --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
+    --danger: color-mix(in oklch, var(--accent) 55%, var(--fg));
+    --danger-soft: color-mix(in oklch, var(--accent) 8%, var(--surface));
+    --font-display: "Iowan Old Style", "Palatino Linotype", "Songti SC", "PMingLiU", Georgia, serif;
+    --font-body: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, "Cascadia Mono", "Sarasa Mono SC", "SF Mono", Menlo, monospace;
+    --fs-h1: clamp(44px, 6vw, 76px);
+    --fs-h2: clamp(32px, 4vw, 48px);
+    --fs-h3: 22px;
+    --fs-lead: 19px;
+    --fs-body: 16px;
+    --fs-meta: 13px;
+    --gap-xs: 8px;
+    --gap-sm: 12px;
+    --gap-md: 20px;
+    --gap-lg: 32px;
+    --gap-xl: 56px;
+    --gap-2xl: 96px;
+    --radius: 10px;
+    --ease: cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.55;
+    font-size: var(--fs-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  img, svg { display: block; max-width: 100%; }
+  a { color: inherit; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  p { text-wrap: pretty; }
+  dl, dd, dt { margin: 0; }
+  h1, h2, h3, p, td, th { overflow-wrap: break-word; }
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; font-weight: 500; }
+  h1 {
+    margin: 12px 0 0;
+    font-size: var(--fs-h1);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    margin: 0;
+    font-size: var(--fs-h2);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+  }
+  h3 {
+    margin: 0;
+    font-size: var(--fs-h3);
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+  }
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: 3px;
+  }
+  .skip {
+    position: absolute;
+    left: 16px;
+    top: -40px;
+    background: var(--surface);
+    padding: 8px 12px;
+    z-index: 20;
+  }
+  .skip:focus { top: 12px; }
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .topnav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gap-sm) var(--gap-lg);
+    padding: 14px 32px;
+    background: color-mix(in oklch, var(--bg) 88%, transparent);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+  }
+  .brand {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .nav-links { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+  .nav-links a {
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    color: var(--fg);
+    font-weight: 550;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  .page {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 56px 32px 120px;
+  }
+  .prose { max-width: 65ch; }
+  .lead {
+    max-width: 60ch;
+    margin: 24px 0 0;
+    font-size: var(--fs-lead);
+    line-height: 1.5;
+  }
+  .kicker {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  .sec-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px 20px;
+    margin: 0 0 28px;
+    padding-bottom: 18px;
+    border-bottom: 2px solid color-mix(in oklch, var(--accent) 35%, var(--border));
+  }
+  .sec-index {
+    margin: 0;
+    min-width: 1.4em;
+    font-family: var(--font-display);
+    font-size: clamp(44px, 5vw, 68px);
+    line-height: 0.8;
+    letter-spacing: -0.03em;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .sec-head h2 { font-size: clamp(36px, 5vw, 56px); }
+  .sec-deck {
+    margin: 10px 0 0;
+    max-width: 42ch;
+    font-size: 18px;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+  .mark {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  section[data-od-id] { scroll-margin-top: 72px; }
+  section + section { margin-top: var(--gap-2xl); }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    margin-top: 36px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: var(--fs-meta);
+    letter-spacing: 0.01em;
+  }
+  .meta b { color: var(--fg); font-weight: 550; }
+
+  .modes {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--gap-md);
+    margin-top: var(--gap-lg);
+  }
+  .mode {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 22px 24px;
+  }
+  .mode header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 12px; align-items: baseline; }
+  .mode .time {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .mode h3 { font-size: 26px; }
+  .mode p { margin: 14px 0 0; color: var(--fg); }
+  .mode-short {
+    background: var(--move-soft);
+    border-color: color-mix(in oklch, var(--move) 30%, var(--border));
+  }
+  .mode-short h3,
+  .mode-short .time { color: var(--move); }
+  .mode-long {
+    background: var(--surface);
+  }
+  .mode-combo {
+    background: var(--accent-soft);
+    border-color: color-mix(in oklch, var(--accent) 42%, var(--border));
+  }
+  .mode-combo h3,
+  .mode-combo .time { color: var(--accent); }
+
+  .stage {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1.15fr) minmax(240px, 0.85fr);
+    gap: var(--gap-lg);
+    align-items: start;
+    margin-top: var(--gap-lg);
+  }
+  .cluster {
+    display: grid;
+    min-width: 0;
+    width: 100%;
+    grid-template-columns: repeat(44, minmax(0, 1fr));
+    grid-template-rows: auto auto;
+    row-gap: 8px;
+    column-gap: 0;
+  }
+  .key {
+    min-width: 0;
+    min-height: 54px;
+    margin-inline: 2px;
+    padding: 6px 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    transition: background-color 150ms var(--ease), border-color 150ms var(--ease);
+  }
+  .key:hover { background: var(--fg-soft); }
+  .key-move {
+    background: var(--move-soft);
+    border-color: color-mix(in oklch, var(--move) 32%, var(--border));
+  }
+  .key-move .key-do { color: var(--move); }
+  .key-move:hover { background: color-mix(in oklch, var(--move) 22%, var(--surface)); }
+  .key-pick {
+    background: var(--pick-soft);
+    border-color: color-mix(in oklch, var(--pick) 32%, var(--border));
+  }
+  .key-pick .key-do { color: var(--pick); }
+  .key-pick:hover { background: color-mix(in oklch, var(--pick) 22%, var(--surface)); }
+  .key-cut {
+    background: var(--accent-soft);
+    border-color: color-mix(in oklch, var(--accent) 32%, var(--border));
+  }
+  .key-cut .key-do { color: var(--accent); }
+  .key-cut:hover { background: color-mix(in oklch, var(--accent) 22%, var(--surface)); }
+  .key-plain { color: var(--muted); }
+  .key-plain:hover { background: var(--fg-soft); }
+  .key.is-on { box-shadow: inset 0 0 0 2px var(--fg); }
+  .key-name {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    letter-spacing: 0.02em;
+  }
+  .key-do {
+    font-size: 12px;
+    letter-spacing: 0.01em;
+    color: var(--muted);
+    line-height: 1.2;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .legend li { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+  .swatch { width: 14px; height: 14px; border-radius: 4px; }
+  .swatch-move { background: var(--move); }
+  .swatch-pick { background: var(--pick); }
+  .swatch-cut { background: var(--accent); }
+  tr.row-move kbd { background: var(--move-soft); color: var(--move); }
+  tr.row-pick kbd { background: var(--pick-soft); color: var(--pick); }
+  tr.row-cut kbd { background: var(--accent-soft); color: var(--accent); }
+  /* 上一排 Q–P；主键排相对右移四分之一键，和实体键盘一致 */
+  .p-q { grid-area: 1 / 1 / auto / span 4; }
+  .p-w { grid-area: 1 / 5 / auto / span 4; }
+  .p-e { grid-area: 1 / 9 / auto / span 4; }
+  .p-r { grid-area: 1 / 13 / auto / span 4; }
+  .p-t { grid-area: 1 / 17 / auto / span 4; }
+  .p-y { grid-area: 1 / 21 / auto / span 4; }
+  .p-u { grid-area: 1 / 25 / auto / span 4; }
+  .p-i { grid-area: 1 / 29 / auto / span 4; }
+  .p-o { grid-area: 1 / 33 / auto / span 4; }
+  .p-p { grid-area: 1 / 37 / auto / span 4; }
+  .p-a { grid-area: 2 / 2 / auto / span 4; }
+  .p-s { grid-area: 2 / 6 / auto / span 4; }
+  .p-d { grid-area: 2 / 10 / auto / span 4; }
+  .p-f { grid-area: 2 / 14 / auto / span 4; }
+  .p-g { grid-area: 2 / 18 / auto / span 4; }
+  .p-h { grid-area: 2 / 22 / auto / span 4; }
+  .p-semi { grid-area: 2 / 38 / auto / span 4; }
+  .p-j { grid-area: 2 / 26 / auto / span 4; }
+  .p-k { grid-area: 2 / 30 / auto / span 4; }
+  .p-l { grid-area: 2 / 34 / auto / span 4; }
+
+  .reading {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 28px 32px;
+    min-height: 220px;
+  }
+  .reading h3 {
+    margin-top: 8px;
+    font-size: clamp(32px, 3vw, 44px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .reading[data-kind="move"] h3 { color: var(--move); }
+  .reading[data-kind="pick"] h3 { color: var(--pick); }
+  .reading[data-kind="cut"] h3 { color: var(--accent); }
+  .reading p { margin: 16px 0 0; max-width: 36ch; }
+  .reading .extra { color: var(--muted); }
+
+  .find {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: end;
+    margin-top: var(--gap-lg);
+  }
+  .find label { display: grid; gap: 6px; font-size: var(--fs-meta); color: var(--muted); letter-spacing: 0.01em; }
+  .find input {
+    width: min(320px, 100%);
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .table-wrap { margin-top: var(--gap-md); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); }
+  th, td {
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    font-size: 12px;
+    font-weight: 550;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+  }
+  kbd {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--fg-soft);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .empty {
+    margin-top: var(--gap-md);
+    padding: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .empty h3 { font-size: 22px; }
+  .empty p { margin: 8px 0 16px; color: var(--muted); }
+  .btn {
+    min-height: 44px;
+    padding: 0 16px;
+    border-radius: 8px;
+    border: 1px solid var(--fg);
+    background: var(--fg);
+    color: var(--bg);
+    letter-spacing: 0.02em;
+  }
+  .btn:hover { background: color-mix(in oklch, var(--fg) 86%, var(--bg)); }
+
+  .steps { display: grid; gap: 8px; margin-top: var(--gap-lg); }
+  .step, .item {
+    width: 100%;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+  }
+  .step:hover, .item:hover { background: var(--fg-soft); }
+  .step.is-on, .item.is-on { border-color: var(--fg); }
+  .idx {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .panel {
+    margin-top: var(--gap-md);
+    max-width: 65ch;
+  }
+  .panel p { margin: 8px 0 0; }
+  .note {
+    margin-top: var(--gap-md);
+    max-width: 65ch;
+    padding: 16px 18px;
+    border: 1px solid var(--danger);
+    border-radius: var(--radius);
+    background: var(--danger-soft);
+  }
+  .note p { margin: 6px 0 0; }
+
+  .tray {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: var(--gap-lg);
+    margin-top: var(--gap-lg);
+    align-items: start;
+  }
+  .menu { display: grid; gap: 8px; }
+  .item b { font-weight: 550; }
+  details {
+    border-top: 1px solid var(--border);
+    padding: 16px 0;
+  }
+  details:last-of-type { border-bottom: 1px solid var(--border); }
+  summary {
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 26px;
+    letter-spacing: -0.01em;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  summary:hover { color: color-mix(in oklch, var(--fg) 75%, var(--muted)); }
+  details p, details ol, details ul { max-width: 65ch; }
+  details a { text-underline-offset: 3px; }
+  .end a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .end {
+    margin-top: var(--gap-2xl);
+    padding-top: var(--gap-lg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--muted);
+    font-size: var(--fs-meta);
+  }
+  .end a { color: var(--fg); }
+
+  @media (max-width: 920px) {
+    .topnav, .page { padding-left: 20px; padding-right: 20px; }
+    .page { padding-top: 36px; }
+    .modes, .stage, .tray { grid-template-columns: 1fr; }
+    .cluster { row-gap: 6px; }
+    .key { min-height: 44px; margin-inline: 1px; }
+    .key-name { font-size: 13px; }
+    .key-do { font-size: 9px; letter-spacing: 0; }
+    section + section { margin-top: 64px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .key { transition: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#content">跳到正文</a>
+<nav class="topnav" aria-label="手册章节">
+  <a class="brand" href="#content">CapsX</a>
+  <div class="nav-links">
+    <a href="#modes">按法</a>
+    <a href="#keyboard">键位</a>
+    <a href="#reference">速查</a>
+    <a href="#setup">安装</a>
+    <a href="#tray">托盘</a>
+    <a href="#troubles">排错</a>
+    <a href="requirements.html">需求</a>
+    <a href="technical-design.html">设计</a>
+  </div>
+</nav>
+
+<main id="content" class="page">
+  <header data-od-id="masthead">
+    <p class="mark">CapsX · v1.1.0</p>
+    <h1>按住 CapsLock，<br>光标就在主键区</h1>
+    <p class="lead">短按仍切换大小写。按住再按字母，移动、选中和删除都不用离开键盘中心。</p>
+    <p class="prose">CapsX 驻在任务栏通知区域，没有主窗口。它适合经常打字、又不想伸手去按方向键的人。快捷键目前是固定的，还不能在界面里改。</p>
+    <dl class="meta">
+      <div><dt class="sr">系统</dt><dd>Windows 10 与 Windows 11，64 位</dd></div>
+      <div><dt class="sr">时间界限</dt><dd>短按小于 <span class="num">150</span> 毫秒</dd></div>
+      <div><dt class="sr">日期</dt><dd><span class="num">2026-10-16</span></dd></div>
+    </dl>
+  </header>
+
+  <section id="modes" data-od-id="modes">
+    <header class="sec-head">
+      <p class="sec-index">01</p>
+      <div>
+        <h2>三种按法</h2>
+        <p class="sec-deck">松手之前，有没有按过别的键。</p>
+      </div>
+    </header>
+    <div class="modes">
+      <article class="mode mode-short">
+        <header>
+          <h3>短按</h3>
+          <span class="time">&lt; 150 ms</span>
+        </header>
+        <p>很快松开，中间不按其他键。大小写切换一次，指示灯跟着系统走。</p>
+      </article>
+      <article class="mode mode-long">
+        <header>
+          <h3>长按</h3>
+          <span class="time">≥ 150 ms</span>
+        </header>
+        <p>按住达到 150 毫秒再松开，中间没有别的键。大小写不会切换，也没有别的动作。</p>
+      </article>
+      <article class="mode mode-combo">
+        <header>
+          <h3>组合</h3>
+          <span class="time">按住 + 字母</span>
+        </header>
+        <p>按住不放再按字母。大小写不动。有绑定的键执行功能，其余照常输入。</p>
+      </article>
+    </div>
+    <p class="prose">暂停之后，这三种区分都消失，CapsLock 回到系统原来的大小写键。</p>
+  </section>
+
+  <section id="keyboard" data-od-id="keyboard">
+    <header class="sec-head">
+      <p class="sec-index">02</p>
+      <div>
+        <h2>键位</h2>
+        <p class="sec-deck">先按住 CapsLock，再点一个字母。</p>
+      </div>
+    </header>
+    <p class="prose">下面两排按实体键盘的位置画：上一排是 Q 到 P，下面是 A 到 L，并且整排向右错开。灰色键没有绑定。点一个键，右边写出它实际做的事。</p>
+    <ul class="legend">
+      <li><span class="swatch swatch-move"></span>移动</li>
+      <li><span class="swatch swatch-pick"></span>选中</li>
+      <li><span class="swatch swatch-cut"></span>删除</li>
+    </ul>
+    <div class="stage">
+      <div class="cluster" role="group" aria-label="CapsLock 组合键">
+        <button type="button" class="key key-plain p-q" data-k="Q" aria-pressed="false"><span class="key-name">Q</span></button>
+        <button type="button" class="key key-cut p-w" data-k="W" aria-pressed="false"><span class="key-name">W</span><span class="key-do">退格</span></button>
+        <button type="button" class="key key-move p-e is-on" data-k="E" aria-pressed="true"><span class="key-name">E</span><span class="key-do">上移</span></button>
+        <button type="button" class="key key-cut p-r" data-k="R" aria-pressed="false"><span class="key-name">R</span><span class="key-do">删除</span></button>
+        <button type="button" class="key key-plain p-t" data-k="T" aria-pressed="false"><span class="key-name">T</span></button>
+        <button type="button" class="key key-plain p-y" data-k="Y" aria-pressed="false"><span class="key-name">Y</span></button>
+        <button type="button" class="key key-plain p-u" data-k="U" aria-pressed="false"><span class="key-name">U</span></button>
+        <button type="button" class="key key-pick p-i" data-k="I" aria-pressed="false"><span class="key-name">I</span><span class="key-do">上选</span></button>
+        <button type="button" class="key key-plain p-o" data-k="O" aria-pressed="false"><span class="key-name">O</span></button>
+        <button type="button" class="key key-plain p-p" data-k="P" aria-pressed="false"><span class="key-name">P</span></button>
+        <button type="button" class="key key-move p-a" data-k="A" aria-pressed="false"><span class="key-name">A</span><span class="key-do">行首</span></button>
+        <button type="button" class="key key-move p-s" data-k="S" aria-pressed="false"><span class="key-name">S</span><span class="key-do">左移</span></button>
+        <button type="button" class="key key-move p-d" data-k="D" aria-pressed="false"><span class="key-name">D</span><span class="key-do">下移</span></button>
+        <button type="button" class="key key-move p-f" data-k="F" aria-pressed="false"><span class="key-name">F</span><span class="key-do">右移</span></button>
+        <button type="button" class="key key-move p-g" data-k="G" aria-pressed="false"><span class="key-name">G</span><span class="key-do">行尾</span></button>
+        <button type="button" class="key key-pick p-h" data-k="H" aria-pressed="false"><span class="key-name">H</span><span class="key-do">选首</span></button>
+        <button type="button" class="key key-pick p-semi" data-k=";" aria-pressed="false"><span class="key-name">;</span><span class="key-do">选尾</span></button>
+        <button type="button" class="key key-pick p-j" data-k="J" aria-pressed="false"><span class="key-name">J</span><span class="key-do">左选</span></button>
+        <button type="button" class="key key-pick p-k" data-k="K" aria-pressed="false"><span class="key-name">K</span><span class="key-do">下选</span></button>
+        <button type="button" class="key key-pick p-l" data-k="L" aria-pressed="false"><span class="key-name">L</span><span class="key-do">右选</span></button>
+      </div>
+      <article class="reading" data-kind="move" aria-live="polite">
+        <p class="kicker" id="read-kicker">CapsLock + E</p>
+        <h3 id="read-title">上移</h3>
+        <p id="read-body">光标向上一行。按住不放会连续移动。</p>
+        <p class="extra" id="read-extra">再按住 Shift，改为向上选中。</p>
+      </article>
+    </div>
+    <p class="prose">I、J、K、L、H 和分号自己会带上 Shift。H 选中到行首，分号选中到行尾。移动键要选中时，也可以按住 Shift 和 CapsLock，再按 E、D、S、F、A 或 G。</p>
+    <p class="prose">灰色键、数字，以及 Ctrl、Alt、Shift、Win，按住 CapsLock 时仍照常交给系统。已经被占用的字母不会再输入原来的字符：按住 CapsLock 时按 S，得到的是向左，不是字母 S，也不会触发 Ctrl+S。</p>
+  </section>
+
+  <section id="reference" data-od-id="reference">
+    <header class="sec-head">
+      <p class="sec-index">03</p>
+      <div>
+        <h2>速查</h2>
+        <p class="sec-deck">全部绑定都在这张表里。</p>
+      </div>
+    </header>
+    <form class="find" role="search">
+      <label>查找字母或动作
+        <input id="query" type="search" placeholder="例如 行首 或 J" autocomplete="off">
+      </label>
+    </form>
+    <div class="table-wrap" id="table-wrap">
+      <table>
+        <thead>
+          <tr><th>按键</th><th>作用</th></tr>
+        </thead>
+        <tbody id="bind-body">
+          <tr class="row-move" data-text="e 上移 光标"><td>CapsLock + <kbd>E</kbd></td><td>上移</td></tr>
+          <tr class="row-move" data-text="d 下移 光标"><td>CapsLock + <kbd>D</kbd></td><td>下移</td></tr>
+          <tr class="row-move" data-text="s 左移 光标"><td>CapsLock + <kbd>S</kbd></td><td>左移</td></tr>
+          <tr class="row-move" data-text="f 右移 光标"><td>CapsLock + <kbd>F</kbd></td><td>右移</td></tr>
+          <tr class="row-move" data-text="a 行首 home"><td>CapsLock + <kbd>A</kbd></td><td>跳到行首</td></tr>
+          <tr class="row-move" data-text="g 行尾 end"><td>CapsLock + <kbd>G</kbd></td><td>跳到行尾</td></tr>
+          <tr class="row-cut" data-text="w 删除 左边 退格 backspace"><td>CapsLock + <kbd>W</kbd></td><td>删除光标左边的字符</td></tr>
+          <tr class="row-cut" data-text="r 删除 右边 delete"><td>CapsLock + <kbd>R</kbd></td><td>删除光标右边的字符</td></tr>
+          <tr class="row-pick" data-text="i 向上选中"><td>CapsLock + <kbd>I</kbd></td><td>向上选中</td></tr>
+          <tr class="row-pick" data-text="k 向下选中"><td>CapsLock + <kbd>K</kbd></td><td>向下选中</td></tr>
+          <tr class="row-pick" data-text="j 向左选中"><td>CapsLock + <kbd>J</kbd></td><td>向左选中</td></tr>
+          <tr class="row-pick" data-text="l 向右选中"><td>CapsLock + <kbd>L</kbd></td><td>向右选中</td></tr>
+          <tr class="row-pick" data-text="h 选中到行首 home"><td>CapsLock + <kbd>H</kbd></td><td>选中到行首</td></tr>
+          <tr class="row-pick" data-text="; 分号 选中到行尾 end"><td>CapsLock + <kbd>;</kbd></td><td>选中到行尾</td></tr>
+          <tr class="row-pick" data-text="shift a 选中到行首"><td>Shift + CapsLock + <kbd>A</kbd></td><td>选中到行首</td></tr>
+          <tr class="row-pick" data-text="shift g 选中到行尾"><td>Shift + CapsLock + <kbd>G</kbd></td><td>选中到行尾</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty" hidden>
+      <h3>没有这个键</h3>
+      <p>表里只有上面这些绑定。其他字母在按住 CapsLock 时仍照常输入。</p>
+      <button type="button" class="btn" id="clear">清除查找</button>
+    </div>
+  </section>
+
+  <section id="setup" data-od-id="setup">
+    <header class="sec-head">
+      <p class="sec-index">04</p>
+      <div>
+        <h2>第一次使用</h2>
+        <p class="sec-deck">装一次驱动，然后重启。</p>
+      </div>
+    </header>
+    <p class="prose">安装器已经在 <kbd>CapsX.exe</kbd> 里。这台电脑只做一次，不用自己打开命令行。驱动装完之前，快捷键不会生效。</p>
+    <div class="steps" aria-label="安装步骤">
+      <button type="button" class="step is-on" aria-pressed="true" data-step="1"><span class="idx">01</span><span>双击程序，同意安装</span></button>
+      <button type="button" class="step" aria-pressed="false" data-step="2"><span class="idx">02</span><span>允许管理员权限</span></button>
+      <button type="button" class="step" aria-pressed="false" data-step="3"><span class="idx">03</span><span>安装完成后重启</span></button>
+      <button type="button" class="step" aria-pressed="false" data-step="4"><span class="idx">04</span><span>再次打开，看到图标</span></button>
+    </div>
+    <div class="panel" id="step-panel">
+      <h3 id="step-title">双击程序，同意安装</h3>
+      <p id="step-body">如果还没装驱动，会问是否现在安装。选择“是”。提示写明：装完必须重启一次，之后不用再执行命令。</p>
+    </div>
+    <div class="note">
+      <strong>权限被拒绝</strong>
+      <p>在用户账户控制里选择“否”，程序会说“没有获得管理员权限，CapsX 没有修改系统设置”，然后退出。系统不会被改动。想装的时候重新双击即可。</p>
+    </div>
+  </section>
+
+  <section id="tray" data-od-id="tray">
+    <header class="sec-head">
+      <p class="sec-index">05</p>
+      <div>
+        <h2>托盘</h2>
+        <p class="sec-deck">图标在任务栏里。</p>
+      </div>
+    </header>
+    <p class="prose">启用时是蓝底白字 CX，提示 <kbd>CapsX - Enabled</kbd>。暂停后变成灰底，提示 <kbd>CapsX - Disabled</kbd>。左键单击，在启用和暂停之间切换。右键打开下面这个菜单。</p>
+    <div class="tray">
+      <div class="menu" aria-label="托盘菜单">
+        <button type="button" class="item is-on" aria-pressed="true" data-menu="enable"><b>Enable</b></button>
+        <button type="button" class="item" aria-pressed="false" data-menu="disable"><b>Disable</b></button>
+        <button type="button" class="item" aria-pressed="false" data-menu="settings"><b>Settings</b></button>
+        <button type="button" class="item" aria-pressed="false" data-menu="about"><b>About CapsX</b></button>
+        <button type="button" class="item" aria-pressed="false" data-menu="exit"><b>Exit</b></button>
+      </div>
+      <article class="reading" aria-live="polite">
+        <p class="kicker">菜单</p>
+        <h3 id="menu-title">Enable</h3>
+        <p id="menu-body">启用 CapsX。启用时这一项前面有勾。左键单击图标也是同一件事。</p>
+      </article>
+    </div>
+    <p class="prose">已经有一个 CapsX 在运行时，再打开会提示“CapsX 已在运行，无法启动第二个实例”。先用的那个不受影响。当前没有开机自启开关；若要登录后自动运行，把快捷方式放进 Windows 启动文件夹。</p>
+  </section>
+
+  <section id="troubles" data-od-id="troubles">
+    <header class="sec-head">
+      <p class="sec-index">06</p>
+      <div>
+        <h2>排错</h2>
+        <p class="sec-deck">连不上，或键没有反应。</p>
+      </div>
+    </header>
+    <p class="prose">做完一项就重新打开 <kbd>CapsX.exe</kbd> 试一次。</p>
+    <details open>
+      <summary>提示必须先重启</summary>
+      <p>驱动已经装上，但这次开机还没加载它。选择“是”立即重启，或自己重启后再运行。</p>
+    </details>
+    <details>
+      <summary>重启后仍然连不上驱动</summary>
+      <ol>
+        <li>确认已经重启过。</li>
+        <li>进主板设置，关闭 Secure Boot 并保存。安全启动不能由 CapsX 代为关闭。</li>
+        <li>打开 Windows 安全中心 → 设备安全性 → 内核隔离，关闭“内存完整性”，然后重启。</li>
+        <li>右键 <kbd>CapsX.exe</kbd>，选择“以管理员身份运行”。</li>
+      </ol>
+    </details>
+    <details>
+      <summary>安装失败，或图标没有出现</summary>
+      <ul>
+        <li>确认用的是完整编译的程序。不完整时会提示找不到内置安装器。</li>
+        <li>安装时允许管理员权限。</li>
+        <li>自动重启失败时，手动重启后再运行。</li>
+        <li>日志在 <kbd>%APPDATA%\CapsX\capx.log</kbd>。把 <kbd>%APPDATA%\CapsX</kbd> 贴进资源管理器地址栏即可打开。</li>
+      </ul>
+    </details>
+    <details>
+      <summary>快捷键没有反应</summary>
+      <ul>
+        <li>托盘提示应是 <kbd>CapsX - Enabled</kbd>。若是 Disabled，左键点一次图标。</li>
+        <li>确认按住的是 CapsLock，并且字母在上表里。</li>
+        <li>确认驱动安装之后已经重启过。</li>
+      </ul>
+    </details>
+    <details>
+      <summary>它会记下我输入的字吗</summary>
+      <p>不会。按键只在内存里用来判断要不要换成快捷键，不写入文件，也不上传。日志里只有启动、停止和按键动作，没有正文。</p>
+    </details>
+  </section>
+
+  <footer class="end">
+    <span>CapsX 1.1.0 · 手册与程序版本一致</span>
+    <a href="https://github.com/kennyself/CapsX">github.com/kennyself/CapsX</a>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var bind = {
+    E: ["上移", "光标向上一行。按住不放会连续移动。", "再按住 Shift，改为向上选中。"],
+    D: ["下移", "光标向下一行。按住不放会连续移动。", "再按住 Shift，改为向下选中。"],
+    S: ["左移", "光标向左一个字符。按住不放会连续移动。", "再按住 Shift，改为向左选中。"],
+    F: ["右移", "光标向右一个字符。按住不放会连续移动。", "再按住 Shift，改为向右选中。"],
+    A: ["行首", "跳到当前行的开头。", "再按住 Shift，改为选中到行首。"],
+    G: ["行尾", "跳到当前行的末尾。", "再按住 Shift，改为选中到行尾。"],
+    W: ["删除左边", "删除光标左边的字符，相当于退格。先选中文字再按，会删掉选中内容。", ""],
+    R: ["删除右边", "删除光标右边的字符，相当于 Delete。先选中文字再按，会删掉选中内容。", ""],
+    I: ["向上选中", "向上选中文字。这一键自己会带上 Shift。", ""],
+    K: ["向下选中", "向下选中文字。这一键自己会带上 Shift。", ""],
+    J: ["向左选中", "向左选中文字。这一键自己会带上 Shift。", ""],
+    L: ["向右选中", "向右选中文字。这一键自己会带上 Shift。", ""],
+    H: ["选中到行首", "选中到当前行的开头。这一键自己会带上 Shift。", ""],
+    ";": ["选中到行尾", "选中到当前行的末尾。这一键自己会带上 Shift。", ""]
+  };
+
+  var steps = {
+    "1": ["双击程序，同意安装", "如果还没装驱动，会问是否现在安装。选择“是”。提示写明：装完必须重启一次，之后不用再执行命令。"],
+    "2": ["允许管理员权限", "当前不是管理员时，Windows 会弹出用户账户控制。选择“是”之后出现“正在安装键盘驱动，请稍候…”。"],
+    "3": ["安装完成后重启", "成功后会问是否现在重启。选择“是”，电脑大约 5 秒后重启。自动重启失败时，按提示手动重启。"],
+    "4": ["再次打开，看到图标", "回到桌面后再双击一次。通知区域出现图标，提示 CapsX - Enabled，快捷键从这时开始生效。"]
+  };
+
+  var menus = {
+    enable: ["Enable", "启用 CapsX。启用时这一项前面有勾。左键单击图标也是同一件事。"],
+    disable: ["Disable", "暂停 CapsX。暂停后 CapsLock 恢复成系统原来的大小写键，提示变为 CapsX - Disabled。"],
+    settings: ["Settings", "会提示设置界面尚未提供。当前不能改键，也不能调节 150 毫秒的时间界限。"],
+    about: ["About CapsX", "查看版本号和项目地址。当前关于窗口写的是 CapsX v1.1.0。"],
+    exit: ["Exit", "退出程序。快捷键立即停止。"]
+  };
+
+  function setPressed(list, current) {
+    list.forEach(function (el) {
+      var on = el === current;
+      el.classList.toggle("is-on", on);
+      el.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+
+  var keys = Array.prototype.slice.call(document.querySelectorAll(".key"));
+  keys.forEach(function (key) {
+    key.addEventListener("click", function () {
+      var code = key.getAttribute("data-k");
+      var item = bind[code];
+      var kind = "plain";
+      if (key.classList.contains("key-pick")) kind = "pick";
+      else if (key.classList.contains("key-cut")) kind = "cut";
+      else if (key.classList.contains("key-move")) kind = "move";
+      document.querySelector("#keyboard .reading").dataset.kind = kind;
+      document.getElementById("read-kicker").textContent = "CapsLock + " + code;
+      document.getElementById("read-title").textContent = item ? item[0] : "照常输入";
+      document.getElementById("read-body").textContent = item
+        ? item[1]
+        : "这个键没有绑定。按住 CapsLock 时，它仍然输入原来的字符。";
+      var extra = document.getElementById("read-extra");
+      extra.textContent = item ? item[2] : "";
+      extra.hidden = !item || !item[2];
+      setPressed(keys, key);
+    });
+  });
+
+  var stepButtons = Array.prototype.slice.call(document.querySelectorAll(".step"));
+  stepButtons.forEach(function (step) {
+    step.addEventListener("click", function () {
+      var item = steps[step.getAttribute("data-step")];
+      document.getElementById("step-title").textContent = item[0];
+      document.getElementById("step-body").textContent = item[1];
+      setPressed(stepButtons, step);
+    });
+  });
+
+  var menuButtons = Array.prototype.slice.call(document.querySelectorAll(".item"));
+  menuButtons.forEach(function (item) {
+    item.addEventListener("click", function () {
+      var text = menus[item.getAttribute("data-menu")];
+      document.getElementById("menu-title").textContent = text[0];
+      document.getElementById("menu-body").textContent = text[1];
+      setPressed(menuButtons, item);
+    });
+  });
+
+  var query = document.getElementById("query");
+  var rows = Array.prototype.slice.call(document.querySelectorAll("#bind-body tr"));
+  var empty = document.getElementById("empty");
+  var tableWrap = document.getElementById("table-wrap");
+  function applyFilter() {
+    var q = query.value.trim().toLowerCase();
+    var shown = 0;
+    rows.forEach(function (row) {
+      var ok = !q || row.getAttribute("data-text").indexOf(q) !== -1;
+      row.hidden = !ok;
+      if (ok) shown += 1;
+    });
+    var none = shown === 0;
+    empty.hidden = !none;
+    tableWrap.hidden = none;
+  }
+  document.querySelector(".find").addEventListener("submit", function (event) {
+    event.preventDefault();
+  });
+  query.addEventListener("input", applyFilter);
+  document.getElementById("clear").addEventListener("click", function () {
+    query.value = "";
+    applyFilter();
+    query.focus();
+  });
+})();
+</script>
+</body>
+</html>

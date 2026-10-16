@@ -1,10 +1,10 @@
 # CapsX 技术设计文档
 
-> **版本**: v0.1.0
+> **版本**: v0.2.0
 > **创建日期**: 2026-06-06
-> **最后更新**: 2026-06-06
+> **最后更新**: 2026-10-16
 > **状态**: 草案
-> **对应需求**: [requirements.md](requirements.md) v1.0.0
+> **对应需求**: [requirements.md](requirements.md) v1.1.0
 
 ---
 
@@ -367,7 +367,8 @@ static const KeyBinding DEFAULT_BINDINGS[] = {
     { 'K',      VK_DOWN,  true,  true  },  // CapsLock + K → Shift+↓
     { 'J',      VK_LEFT,  true,  true  },  // CapsLock + J → Shift+←
     { 'L',      VK_RIGHT, true,  true  },  // CapsLock + L → Shift+→
-    // ... 更多绑定
+    { 'H',      VK_HOME,  true,  true  },  // CapsLock + H → Shift+Home
+    { VK_OEM_1, VK_END,   true,  true  },  // CapsLock + ; → Shift+End
 };
 ```
 
@@ -375,7 +376,7 @@ Phase 2 从 JSON 配置加载绑定，存储为 `std::unordered_map<uint64_t, Ke
 
 #### 2.4.3 Shift 组合键的处理
 
-文本选择功能（SEL-01~04）使用 `CapsLock + I/K/J/L`，模拟 `Shift + 方向键`。
+文本选择功能（SEL-01~04）使用 `CapsLock + I/K/J/L`，模拟 `Shift + 方向键`。SEL-05/06 使用 `CapsLock + H` 与 `CapsLock + ;`，模拟 `Shift + Home/End`。
 
 在 CapsLock 按住期间，用户按下 `I`：
 1. 钩子拦截 `I` 的 DOWN 事件
@@ -620,7 +621,9 @@ Phase 1 不创建配置文件，所有绑定硬编码在源码中。
       "up":    { "key": "I", "target": "Up",    "withShift": true },
       "down":  { "key": "K", "target": "Down",  "withShift": true },
       "left":  { "key": "J", "target": "Left",  "withShift": true },
-      "right": { "key": "L", "target": "Right", "withShift": true }
+      "right": { "key": "L", "target": "Right", "withShift": true },
+      "home":  { "key": "H", "target": "Home",  "withShift": true },
+      "end":   { "key": ";", "target": "End",   "withShift": true }
     },
     "functionKeys": {
       "F1":  { "key": "1"  },

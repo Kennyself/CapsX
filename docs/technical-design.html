@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CapsX 技术设计</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --fg: #1a1916;
+    --muted: #5c5a55;
+    --border: #e8e5df;
+    --accent: #8a3b24;
+    --move: #1c4f73;
+    --pick: #1f5c45;
+    --accent-soft: color-mix(in oklch, var(--accent) 12%, var(--surface));
+    --pick-soft: color-mix(in oklch, var(--pick) 14%, var(--surface));
+    --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
+    --font-display: "Iowan Old Style", "Palatino Linotype", "Songti SC", "PMingLiU", Georgia, serif;
+    --font-body: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 500; text-wrap: balance; }
+  h1 { margin: 12px 0 0; font-size: clamp(44px, 6vw, 72px); line-height: 1.05; letter-spacing: -0.02em; }
+  h2 { margin: 0; font-size: clamp(36px, 4vw, 52px); letter-spacing: -0.02em; line-height: 1.12; }
+  h3 { margin: 28px 0 8px; font-size: 24px; letter-spacing: -0.01em; }
+  p, li { max-width: 68ch; }
+  p { text-wrap: pretty; }
+  a { color: inherit; }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+  .topnav {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 20px;
+    padding: 14px 32px;
+    background: color-mix(in oklch, var(--bg) 88%, transparent);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+  }
+  .brand { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; }
+  .nav-links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .nav-links a { text-decoration: none; font-size: 15px; font-weight: 550; min-height: 32px; display: inline-flex; align-items: center; }
+  .nav-links a:hover, .nav-links a[aria-current="page"] { color: var(--accent); }
+  .page { max-width: 980px; margin: 0 auto; padding: 56px 32px 120px; }
+  .mark { margin: 0; color: var(--accent); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .lead { font-size: 19px; max-width: 60ch; }
+  section { margin-top: 72px; scroll-margin-top: 72px; }
+  .sec-head {
+    display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 20px;
+    margin-bottom: 20px; padding-bottom: 16px;
+    border-bottom: 2px solid color-mix(in oklch, var(--accent) 35%, var(--border));
+  }
+  .sec-index { margin: 0; font-family: var(--font-display); font-size: clamp(44px, 5vw, 64px); line-height: 0.8; letter-spacing: -0.03em; color: var(--accent); }
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); margin: 12px 0 20px; }
+  th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-size: 12px; letter-spacing: 0.04em; }
+  tr.fresh td { background: var(--pick-soft); }
+  code { font-family: var(--font-mono); font-size: 0.92em; }
+  @media (max-width: 920px) {
+    .topnav, .page { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="文档">
+  <a class="brand" href="user-manual.html">CapsX</a>
+  <div class="nav-links">
+    <a href="user-manual.html">手册</a>
+    <a href="requirements.html">需求</a>
+    <a href="technical-design.html" aria-current="page">设计</a>
+  </div>
+</nav>
+<main class="page">
+  <header data-od-id="masthead">
+    <p class="mark">Design · v0.2.0</p>
+    <h1>技术设计</h1>
+    <p class="lead">单文件后台程序。CapsLock 的短按、长按和组合由状态机区分，绑定表把字母翻译成编辑键。对应需求 v1.1.0。</p>
+    <p>这是设计草案的阅读版。完整代码片段和早期方案仍在 <a href="technical-design.md">technical-design.md</a>。当前程序的选中绑定以下面的 SEL-05、SEL-06 为准。</p>
+  </header>
+
+  <section id="arch" data-od-id="arch">
+    <header class="sec-head"><p class="sec-index">01</p><div><h2>架构</h2></div></header>
+    <p>CapsX 编成一个 exe。单实例锁、按键处理、绑定表和托盘都在这个进程里。分发时复制这一个文件；第一次运行会从 exe 里释放键盘驱动安装器。</p>
+    <p>按键不走低级钩子回调。Interception 在内核过滤驱动里拿到扫描码，用户态线程把它映射成虚拟键，再交给状态机决定拦截、放行或注入。</p>
+  </section>
+
+  <section id="core" data-od-id="core">
+    <header class="sec-head"><p class="sec-index">02</p><div><h2>按键与绑定</h2></div></header>
+    <h3>三种状态</h3>
+    <p>空闲、按下中、组合中。CapsLock 按下时先拦截，操作系统还没收到这个键，指示灯不会闪。150 毫秒内松开且没有别的键，就注入一次 CapsLock 切换。否则不注入。</p>
+    <h3>默认绑定</h3>
+    <p>查找是一张短表上的线性扫描。选中类绑定的 <code>withShift</code> 为真，注入时会先按下 Shift，再按下目标键，然后按相反顺序松开。</p>
+    <table>
+      <thead><tr><th>触发</th><th>注入</th><th>选中</th></tr></thead>
+      <tbody>
+        <tr><td>E / D / S / F</td><td>方向键</td><td>否</td></tr>
+        <tr><td>A / G</td><td>Home / End</td><td>否。按住 Shift 时，因为 Shift 被放行，效果变成选中。</td></tr>
+        <tr><td>W / R</td><td>Backspace / Delete</td><td>否</td></tr>
+        <tr><td>I / K / J / L</td><td>Shift + 方向键</td><td>是</td></tr>
+        <tr class="fresh"><td>H</td><td>Shift + Home</td><td>是，选中到行首</td></tr>
+        <tr class="fresh"><td>;（VK_OEM_1）</td><td>Shift + End</td><td>是，选中到行尾</td></tr>
+      </tbody>
+    </table>
+    <p>分号键的扫描码是 <code>0x27</code>。钩子用 <code>MapVirtualKey</code> 得到 <code>VK_OEM_1</code>，绑定表用这个虚拟键，而不是字符本身。</p>
+    <pre>H       → VK_HOME, withShift
+VK_OEM_1 → VK_END,  withShift</pre>
+  </section>
+
+  <section id="ui" data-od-id="ui">
+    <header class="sec-head"><p class="sec-index">03</p><div><h2>托盘</h2></div></header>
+    <p>没有主窗口。消息窗口收托盘回调。左键切换启用，右键菜单是 Enable、Disable、Settings、About CapsX、Exit。About 显示 v1.1.0。Settings 只提示设置界面尚未提供。</p>
+    <p>启用时图标是蓝底白字 CX，暂停时是灰底。</p>
+  </section>
+
+  <section id="config" data-od-id="config">
+    <header class="sec-head"><p class="sec-index">04</p><div><h2>配置</h2></div></header>
+    <p>当前没有 JSON 配置。绑定写在 <code>binding_manager.cpp</code>。日志在 <code>%APPDATA%\CapsX\capx.log</code>。设计草案里的 <code>settings.json</code> 仍是后续方案，里面的选中项应包含 H 与分号：</p>
+    <pre>"home": { "key": "H", "target": "Home", "withShift": true },
+"end":  { "key": ";", "target": "End",  "withShift": true }</pre>
+  </section>
+
+  <section id="build" data-od-id="build">
+    <header class="sec-head"><p class="sec-index">05</p><div><h2>构建</h2></div></header>
+    <p>CMake 工程版本是 1.1.0，语言标准 C++17。Interception 源码静态链进 exe，并定义 <code>INTERCEPTION_STATIC</code>。官方安装器作为 RCDATA 打进程序，构建前文件必须存在。</p>
+    <p>MSVC 使用 <code>/utf-8</code>。MinGW 使用 Unicode 入口和静态运行库，资源代码页 65001。</p>
+  </section>
+
+  <section id="risks" data-od-id="risks">
+    <header class="sec-head"><p class="sec-index">06</p><div><h2>已知限制</h2></div></header>
+    <ul>
+      <li>驱动安装后必须重启。安全启动或内存完整性打开时，驱动可能加载失败，程序不能代为关闭。</li>
+      <li>同一台机器只能有一个 CapsX。驱动不支持多个客户端同时拦截。</li>
+      <li>设置界面、自定义绑定和开机自启开关还没有。</li>
+      <li>设计草案前半部分仍有早期低级钩子方案的叙述。实现以 Interception 路径为准。</li>
+    </ul>
+    <p>原文：<a href="technical-design.md">technical-design.md</a></p>
+  </section>
+</main>
+</body>
+</html>

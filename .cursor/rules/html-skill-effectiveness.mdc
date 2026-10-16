@@ -1,0 +1,14 @@
+---
+description: 生成或改写 HTML 文档时使用 html-skill-effectiveness，不用 pretty-page
+alwaysApply: true
+---
+
+# HTML 文档
+
+生成或改写给用户阅读的 HTML 时，遵循 html-skill-effectiveness，不要使用 pretty-page。
+
+- 单个 HTML 文件，CSS 和脚本内联，不引用外部字体、CDN 或 pretty-page 模板。
+- 使用六色设计令牌：背景 `#fafaf7`、表面 `#ffffff`、正文 `#1a1916`、次要 `#5c5a55`、分隔 `#e8e5df`、强调 `#8a3b24`。原始色值只写在 `:root`。
+- 标题用衬线字体，章节名要足够大。需要区分种类时，再用蓝色移动、绿色选中、陶土色删除。
+- 内容以仓库里的 Markdown 和代码为准，不写未实现的功能。
+- `docs/` 里每份 Markdown 都有同名的阅读版 HTML。改了 Markdown，同步改对应 HTML。

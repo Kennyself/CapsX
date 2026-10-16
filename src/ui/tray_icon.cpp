@@ -190,7 +190,7 @@ LRESULT CALLBACK TrayIcon::TrayWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
         case IDM_ABOUT:
         {
             MessageBoxW(NULL,
-                L"CapsX v1.0.0\nTurn CapsLock into a powerful modifier key\n\nhttps://github.com/kennyself/CapsX",
+                L"CapsX v1.1.0\nTurn CapsLock into a powerful modifier key\n\nhttps://github.com/kennyself/CapsX",
                 L"About CapsX",
                 MB_OK | MB_ICONINFORMATION
             );
