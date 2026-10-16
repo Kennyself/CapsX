@@ -539,7 +539,7 @@
 
 <main id="content" class="page">
   <header data-od-id="masthead">
-    <p class="mark">CapsX · v1.1.0</p>
+    <p class="mark">CapsX · v1.1.1</p>
     <h1>按住 CapsLock，<br>光标就在主键区</h1>
     <p class="lead">短按仍切换大小写。按住再按字母，移动、选中和删除都不用离开键盘中心。</p>
     <p class="prose">CapsX 驻在任务栏通知区域，没有主窗口。它适合经常打字、又不想伸手去按方向键的人。快捷键目前是固定的，还不能在界面里改。</p>
@@ -715,8 +715,8 @@
       <div class="menu" aria-label="托盘菜单">
         <button type="button" class="item is-on" aria-pressed="true" data-menu="enable"><b>Enable</b></button>
         <button type="button" class="item" aria-pressed="false" data-menu="disable"><b>Disable</b></button>
-        <button type="button" class="item" aria-pressed="false" data-menu="settings"><b>Settings</b></button>
-        <button type="button" class="item" aria-pressed="false" data-menu="about"><b>About CapsX</b></button>
+        <button type="button" class="item" aria-pressed="false" data-menu="autostart"><b>Launch at startup</b></button>
+        <button type="button" class="item" aria-pressed="false" data-menu="about"><b>About</b></button>
         <button type="button" class="item" aria-pressed="false" data-menu="exit"><b>Exit</b></button>
       </div>
       <article class="reading" aria-live="polite">
@@ -725,7 +725,7 @@
         <p id="menu-body">启用 CapsX。启用时这一项前面有勾。左键单击图标也是同一件事。</p>
       </article>
     </div>
-    <p class="prose">已经有一个 CapsX 在运行时，再打开会提示“CapsX 已在运行，无法启动第二个实例”。先用的那个不受影响。当前没有开机自启开关；若要登录后自动运行，把快捷方式放进 Windows 启动文件夹。</p>
+    <p class="prose">已经有一个 CapsX 在运行时，再打开会提示“CapsX 已在运行，无法启动第二个实例”。先用的那个不受影响。菜单里的 Launch at startup 有勾时，登录 Windows 会自动打开当前这个程序。再点一次就取消。</p>
   </section>
 
   <section id="troubles" data-od-id="troubles">
@@ -774,7 +774,7 @@
   </section>
 
   <footer class="end">
-    <span>CapsX 1.1.0 · 手册与程序版本一致</span>
+    <span>CapsX 1.1.1 · 手册与程序版本一致</span>
     <a href="https://github.com/kennyself/CapsX">github.com/kennyself/CapsX</a>
   </footer>
 </main>
@@ -808,8 +808,8 @@
   var menus = {
     enable: ["Enable", "启用 CapsX。启用时这一项前面有勾。左键单击图标也是同一件事。"],
     disable: ["Disable", "暂停 CapsX。暂停后 CapsLock 恢复成系统原来的大小写键，提示变为 CapsX - Disabled。"],
-    settings: ["Settings", "会提示设置界面尚未提供。当前不能改键，也不能调节 150 毫秒的时间界限。"],
-    about: ["About CapsX", "查看版本号和项目地址。当前关于窗口写的是 CapsX v1.1.0。"],
+    autostart: ["Launch at startup", "有勾时，下次登录 Windows 会自动运行当前的 CapsX.exe。再点一次取消。长按时间固定为 150 毫秒。"],
+    about: ["About", "查看版本号和项目地址。当前关于窗口写的是 CapsX v1.1.1。"],
     exit: ["Exit", "退出程序。快捷键立即停止。"]
   };
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(CapsX VERSION 1.1.0 LANGUAGES C CXX)
+project(CapsX VERSION 1.1.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -40,6 +40,7 @@ add_executable(CapsX WIN32
     src/ui/tray_icon.cpp
     src/ui/tray_icon_drawer.cpp
     src/utils/logger.cpp
+    src/utils/auto_start.cpp
     src/utils/string_utils.cpp
     # Interception 用户态库源码直接编译进 CapsX.exe
     # Why: INTERCEPTION_STATIC 模式下，API 函数编译为普通函数而非 DLL 导入，
@@ -63,4 +64,5 @@ set_source_files_properties(res/app.rc PROPERTIES
 target_link_libraries(CapsX PRIVATE
     comctl32   # ListView、Spin 控件
     shell32    # Shell_NotifyIcon
+    advapi32   # 当前用户的开机自启注册表
 )

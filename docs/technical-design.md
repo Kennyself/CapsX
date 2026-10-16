@@ -4,7 +4,15 @@
 > **创建日期**: 2026-06-06
 > **最后更新**: 2026-10-16
 > **状态**: 草案
-> **对应需求**: [requirements.md](requirements.md) v1.1.0
+> **对应需求**: [requirements.md](requirements.md) v1.1.1
+
+下文有些模块仍是早期方案。和 v1.1.1 程序不一致的地方，以这里为准：
+
+- 按键拦截使用 Interception 驱动，不是 `WH_KEYBOARD_LL`。
+- 没有设置窗口。托盘菜单是 Enable、Disable、Launch at startup、About、Exit。
+- `Launch at startup` 写在 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，由 `src/utils/auto_start.cpp` 实现。
+- 长按界限固定为 150 毫秒，不能在界面里改。
+- 选中到行首、行尾分别是 `CapsLock + H` 和 `CapsLock + ;`。
 
 ---
 
@@ -81,7 +89,7 @@ CapsX 运行为单一后台进程：
 
 - **无窗口消息循环**（Phase 1）：仅运行隐藏消息循环以接收钩子回调
 - **托盘消息循环**（Phase 1+）：Shell_NotifyIcon 需要窗口消息循环
-- **设置对话框**（Phase 2+）：模态对话框，仅在用户打开时创建
+- **设置对话框**：当前版本没有。开机自启在托盘菜单里开关
 
 ---
 
@@ -509,7 +517,9 @@ case WM_LBUTTONUP:
 
 禁用时，钩子回调仍然存在，但对所有按键事件直接 `CallNextHookEx` 放行。
 
-### 3.2 SettingsDlg — 设置对话框（Phase 2+）
+### 3.2 SettingsDlg — 设置对话框（尚未实现）
+
+当前版本没有这个窗口。开机自启是托盘菜单 `Launch at startup`，不是对话框里的复选框。下面的布局只保留作后续方案。
 
 使用 Win32 `CreateDialogParam` / `DialogBoxParam` 创建模态对话框。
 
@@ -737,10 +747,14 @@ main.cpp
   │      └→ logger
   ├──→ tray_icon
   │      └→ tray_icon_drawer
-  ├──→ settings_dialog (Phase 2+)
-  │      └→ config_manager
-  │      └→ string_utils
-  └→ auto_start (Phase 2+)
+  └──→ auto_start              # 已实现，托盘菜单 Launch at startup 调用
+```
+
+设置窗口和 JSON 配置尚未实现，不在当前依赖里：
+
+```
+settings_dialog (尚未实现)
+  └→ config_manager (尚未实现)
 ```
 
 ### 5.3 头文件规范

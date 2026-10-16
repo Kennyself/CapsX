@@ -88,7 +88,7 @@
   <header data-od-id="masthead">
     <p class="mark">Design · v0.2.0</p>
     <h1>技术设计</h1>
-    <p class="lead">单文件后台程序。CapsLock 的短按、长按和组合由状态机区分，绑定表把字母翻译成编辑键。对应需求 v1.1.0。</p>
+    <p class="lead">对应需求 v1.1.1。没有设置窗口。托盘菜单是 Enable、Disable、Launch at startup、About、Exit。长按时间固定为 150 毫秒。选中到行首、行尾是 CapsLock + H 和 CapsLock + ;。</p>
     <p>这是设计草案的阅读版。完整代码片段和早期方案仍在 <a href="technical-design.md">technical-design.md</a>。当前程序的选中绑定以下面的 SEL-05、SEL-06 为准。</p>
   </header>
 
@@ -122,7 +122,7 @@ VK_OEM_1 → VK_END,  withShift</pre>
 
   <section id="ui" data-od-id="ui">
     <header class="sec-head"><p class="sec-index">03</p><div><h2>托盘</h2></div></header>
-    <p>没有主窗口。消息窗口收托盘回调。左键切换启用，右键菜单是 Enable、Disable、Settings、About CapsX、Exit。About 显示 v1.1.0。Settings 只提示设置界面尚未提供。</p>
+    <p>没有主窗口。消息窗口收托盘回调。左键切换启用，右键菜单是 Enable、Disable、Launch at startup、About、Exit。About 显示 v1.1.1。Launch at startup 写在当前用户的 Run 项里。长按时间固定为 150 毫秒。</p>
     <p>启用时图标是蓝底白字 CX，暂停时是灰底。</p>
   </section>
 
@@ -135,7 +135,7 @@ VK_OEM_1 → VK_END,  withShift</pre>
 
   <section id="build" data-od-id="build">
     <header class="sec-head"><p class="sec-index">05</p><div><h2>构建</h2></div></header>
-    <p>CMake 工程版本是 1.1.0，语言标准 C++17。Interception 源码静态链进 exe，并定义 <code>INTERCEPTION_STATIC</code>。官方安装器作为 RCDATA 打进程序，构建前文件必须存在。</p>
+    <p>CMake 工程版本是 1.1.1，语言标准 C++17。Interception 源码静态链进 exe，并定义 <code>INTERCEPTION_STATIC</code>。官方安装器作为 RCDATA 打进程序，构建前文件必须存在。</p>
     <p>MSVC 使用 <code>/utf-8</code>。MinGW 使用 Unicode 入口和静态运行库，资源代码页 65001。</p>
   </section>
 
@@ -144,7 +144,7 @@ VK_OEM_1 → VK_END,  withShift</pre>
     <ul>
       <li>驱动安装后必须重启。安全启动或内存完整性打开时，驱动可能加载失败，程序不能代为关闭。</li>
       <li>同一台机器只能有一个 CapsX。驱动不支持多个客户端同时拦截。</li>
-      <li>设置界面、自定义绑定和开机自启开关还没有。</li>
+      <li>自定义绑定还没有。长按时间固定为 150 毫秒，没有设置窗口。</li>
       <li>设计草案前半部分仍有早期低级钩子方案的叙述。实现以 Interception 路径为准。</li>
     </ul>
     <p>原文：<a href="technical-design.md">technical-design.md</a></p>

@@ -6,6 +6,7 @@
 #include "ui/tray_icon.h"
 #include "ui/tray_icon_drawer.h"
 #include "core/state_machine.h"
+#include "utils/auto_start.h"
 #include "utils/logger.h"
 
 // Tray icon callback message ID
@@ -14,7 +15,7 @@
 // Menu command IDs
 #define IDM_ENABLE   1001
 #define IDM_DISABLE  1002
-#define IDM_SETTINGS 1003
+#define IDM_AUTOSTART 1003
 #define IDM_ABOUT    1004
 #define IDM_EXIT     1005
 
@@ -150,8 +151,13 @@ LRESULT CALLBACK TrayIcon::TrayWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
             AppendMenuW(hMenu, disableFlags, IDM_DISABLE, L"Disable");
 
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-            AppendMenuW(hMenu, MF_STRING, IDM_SETTINGS, L"Settings");
-            AppendMenuW(hMenu, MF_STRING, IDM_ABOUT,    L"About CapsX");
+            UINT autoStartFlags = MF_STRING;
+            if (AutoStart::IsEnabled())
+            {
+                autoStartFlags |= MF_CHECKED;
+            }
+            AppendMenuW(hMenu, autoStartFlags, IDM_AUTOSTART, L"Launch at startup");
+            AppendMenuW(hMenu, MF_STRING, IDM_ABOUT, L"About");
             AppendMenuW(hMenu, MF_STRING, IDM_EXIT,     L"Exit");
 
             // Why: SetForegroundWindow ensures menu closes properly on focus loss
@@ -190,16 +196,20 @@ LRESULT CALLBACK TrayIcon::TrayWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, L
         case IDM_ABOUT:
         {
             MessageBoxW(NULL,
-                L"CapsX v1.1.0\nTurn CapsLock into a powerful modifier key\n\nhttps://github.com/kennyself/CapsX",
-                L"About CapsX",
+                L"CapsX v1.1.1\nTurn CapsLock into a powerful modifier key.\n\nhttps://github.com/kennyself/CapsX",
+                L"About",
                 MB_OK | MB_ICONINFORMATION
             );
             break;
         }
 
-        case IDM_SETTINGS:
+        case IDM_AUTOSTART:
         {
-            MessageBoxW(NULL, L"Settings UI will be available in Phase 2", L"CapsX", MB_OK | MB_ICONINFORMATION);
+            const bool enabled = !AutoStart::IsEnabled();
+            if (!AutoStart::SetEnabled(enabled))
+            {
+                MessageBoxW(hWnd, L"Launch at startup 没有改成，请稍后再试。", L"CapsX", MB_OK | MB_ICONWARNING);
+            }
             break;
         }
         }

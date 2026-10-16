@@ -90,7 +90,7 @@
 </nav>
 <main class="page">
   <header data-od-id="masthead">
-    <p class="mark">Requirements · v1.1.0</p>
+    <p class="mark">Requirements · v1.1.1</p>
     <h1>需求规格</h1>
     <p class="lead">把 CapsLock 变成修饰键。短按仍切换大小写；按住后再按主键区的字母，完成移动、选中和删除。</p>
     <dl class="meta">
@@ -120,7 +120,7 @@
         <tr><td>组合</td><td>按住 CapsLock 再按其他键</td><td>不切换</td></tr>
       </tbody>
     </table>
-    <p>长按阈值参数 <code>longPressThresholdMs</code> 的默认值是 150 毫秒。当前版本还不能在界面里修改。</p>
+    <p>长按阈值固定为 150 毫秒。</p>
   </section>
 
   <section id="features" data-od-id="features">
@@ -140,7 +140,7 @@
       </tbody>
     </table>
     <h3>文本选择</h3>
-    <p>v1.1.0 新增两行，用绿色标出。H 选中到行首，分号选中到行尾，这两键自己带上 Shift。</p>
+    <p>H 选中到行首，分号选中到行尾。这两键和 I、J、K、L 一样，自己带上 Shift。上表这些移动和选择都已实现。</p>
     <table>
       <thead><tr><th>编号</th><th>快捷键</th><th>功能</th></tr></thead>
       <tbody>
@@ -153,11 +153,11 @@
       </tbody>
     </table>
     <h3>尚未提供</h3>
-    <p>功能键 F1–F12、双按启动器、翻译、大小写转换、设置界面、开机自启开关、应用黑名单和导入导出，仍列在需求里，当前程序没有这些界面或动作。</p>
+    <p>没有设置窗口。功能键 F1–F12、双按启动器、翻译、大小写转换、改键、长按时间调节、应用黑名单和导入导出都还没有。登录后自动运行是托盘菜单 Launch at startup，长按时间固定为 150 毫秒。</p>
     <h3>已经提供的托盘与单实例</h3>
     <ul>
-      <li>托盘常驻。左键启用或暂停，右键有 Enable、Disable、Settings、About、Exit。</li>
-      <li>Settings 会说明设置界面尚未提供。</li>
+      <li>托盘常驻。左键启用或暂停，右键有 Enable、Disable、Launch at startup、About、Exit。</li>
+      <li>Launch at startup 有勾时，登录 Windows 会自动运行当前的 CapsX.exe。</li>
       <li>重复启动时提示“CapsX 已在运行”，新实例退出。</li>
       <li>首次运行安装键盘驱动，装完必须重启一次。</li>
     </ul>

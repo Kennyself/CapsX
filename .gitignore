@@ -1,7 +1,8 @@
 ## A streamlined .gitignore for CapsX C++ project
 
-# CMake build output
-build/
+# CMake build output。build.bat 是一键编译脚本，需要纳入版本库。
+build/*
+!build/build.bat
 build-*/
 
 # Visual Studio
